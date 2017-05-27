@@ -1,0 +1,8 @@
+dn: inum=%(inum_org)s!0003!60B7,ou=groups,o=%(inum_org)s,o=gluu
+objectClass: top
+objectClass: gluuGroup
+gluuGroupType: gluuManagerGroup
+inum: %(inum_org)s!0003!60B7
+gluuStatus: active
+displayName: Gluu Manager Group
+member: inum=%(inum_org)s!0000!A8F2.DE1E.D7FB,ou=people,o=%(inum_org)s,o=gluu
