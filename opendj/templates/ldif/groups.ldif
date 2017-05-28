@@ -1,8 +1,9 @@
-dn: inum=%(inum_org)s!0003!60B7,ou=groups,o=%(inum_org)s,o=gluu
+dn: inum=%(inumOrg)s!0003!60B7,ou=groups,o=%(inumOrg)s,o=gluu
 objectClass: top
 objectClass: gluuGroup
 gluuGroupType: gluuManagerGroup
-inum: %(inum_org)s!0003!60B7
+inum: %(inumOrg)s!0003!60B7
 gluuStatus: active
 displayName: Gluu Manager Group
-member: inum=%(inum_org)s!0000!A8F2.DE1E.D7FB,ou=people,o=%(inum_org)s,o=gluu
+member: inum=%(inumOrg)s!0000!A8F2.DE1E.D7FB,ou=people,o=%(inumOrg)s,o=gluu
+

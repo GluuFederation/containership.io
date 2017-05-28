@@ -7,3 +7,4 @@ dn: ou=people,o=site
 objectclass: top
 objectclass: organizationalUnit
 ou: people
+
