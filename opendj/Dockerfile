@@ -1,4 +1,4 @@
-FROM gluufederation/base
+FROM ubuntu:14.04
 
 MAINTAINER Shouro <shouro@gluu.org>
 
