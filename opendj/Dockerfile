@@ -48,5 +48,8 @@ EXPOSE 1389
 # LDAPS port
 EXPOSE 1636
 
+# Admin port
+EXPOSE 4444
+
 # replication port
 EXPOSE 8989
