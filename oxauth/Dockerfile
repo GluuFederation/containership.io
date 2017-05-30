@@ -111,6 +111,6 @@ RUN cd /usr/lib/jvm && ln -s java-1.8.0-openjdk-amd64 default-java
 # Ports required by jetty
 EXPOSE 8080
 
-COPY entrypoint.sh /opt/scripts/
+COPY scripts/entrypoint.sh /opt/scripts/
 RUN chmod +x /opt/scripts/entrypoint.sh
 ENTRYPOINT ["/opt/scripts/entrypoint.sh"]
