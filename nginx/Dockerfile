@@ -35,6 +35,10 @@ ENV GLUU_DOMAIN localhost
 ENV GLUU_OXAUTH_BACKEND localhost:8081
 ENV GLUU_OXTRUST_BACKEND localhost:8082
 
+# forward request and error logs to docker log collector
+RUN ln -sf /dev/stdout /var/log/nginx/access.log \
+    && ln -sf /dev/stderr /var/log/nginx/error.log
+
 COPY scripts/entrypoint.sh /opt/scripts/
 COPY scripts/entrypoint.py /opt/scripts/
 RUN chmod +x /opt/scripts/entrypoint.sh
