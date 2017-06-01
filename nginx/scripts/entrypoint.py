@@ -40,11 +40,6 @@ def render_nginx_conf():
             }
             fd.write(rendered_txt)
 
-        if not os.path.exists("/etc/nginx/sites-enabled/gluu_https.conf"):
-            os.symlink("/etc/nginx/sites-available/gluu_https.conf",
-                       "/etc/nginx/sites-enabled/gluu_https.conf")
-            os.unlink("/etc/nginx/sites-enabled/default")
-
 
 if __name__ == "__main__":
     render_ssl_cert()
