@@ -3,9 +3,7 @@ set -e
 
 if [ ! -f /touched ]; then
     touch /touched
-    # TODO:
-    # 1. render /etc/gluu/conf/salt.tmpl
-    # 2. render /etc/gluu/conf/ox-ldap.properties.tmpl
+    python /opt/scripts/entrypoint.py
 fi
 
 cd /opt/gluu/jetty/oxauth
