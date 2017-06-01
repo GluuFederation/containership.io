@@ -15,6 +15,8 @@ RUN apt-get update && apt-get install -y \
     openjdk-8-jre-headless \
     unzip \
     wget \
+    python \
+    python-pip \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -72,7 +74,7 @@ LABEL vendor="Gluu Federation" \
 RUN wget -q ${OXTRUST_DOWNLOAD_URL} -O /tmp/oxtrust.war \
     && mkdir -p ${JETTY_BASE}/identity/webapps \
     && unzip -qq /tmp/oxtrust.war -d ${JETTY_BASE}/identity/webapps/identity \
-    && java -jar ${JETTY_HOME}/start.jar jetty.home=${JETTY_HOME} jetty.base=${JETTY_BASE}/identity --add-to-start=deploy,http,logging,jsp,ext,http-forwarded \
+    && java -jar ${JETTY_HOME}/start.jar jetty.home=${JETTY_HOME} jetty.base=${JETTY_BASE}/identity --add-to-start=deploy,http,jsp,ext,http-forwarded \
     && rm -f /tmp/oxtrust.war
 
 RUN mkdir -p ${JETTY_USER_HOME_LIB}
@@ -96,11 +98,15 @@ RUN mkdir -p /opt/scripts/
 # Unpack Shib config
 RUN unzip -q ${JETTY_BASE}/identity/webapps/identity/WEB-INF/lib/oxtrust-configuration-${OX_VERSION}.jar shibboleth3/* -d /opt/gluu/jetty/identity/conf
 
+# Directory for templates
+RUN mkdir -p /opt/templates/
+
 # Copy templates
 COPY jetty/identity_web_resources.xml ${JETTY_BASE}/identity/webapps/
 COPY conf/oxTrustLogRotationConfiguration.xml /etc/gluu/conf/
-COPY conf/ox-ldap.properties.tmpl /etc/gluu/conf/
-COPY conf/salt.tmpl /etc/gluu/conf/
+COPY conf/ox-ldap.properties.tmpl /opt/templates/
+COPY conf/salt.tmpl /opt/templates/
+COPY conf/oxTrustLogRotationConfiguration.xml /etc/gluu/conf/
 
 # Set openjdk 8 as default java
 RUN cd /usr/lib/jvm && ln -s java-1.8.0-openjdk-amd64 default-java
@@ -108,6 +114,25 @@ RUN cd /usr/lib/jvm && ln -s java-1.8.0-openjdk-amd64 default-java
 # Ports required by jetty
 EXPOSE 8080
 
+# Python packages
+RUN pip install -U pip
+
+# A workaround to address https://github.com/docker/docker-py/issues/1054
+# and to make sure latest pip is being used, not from OS one
+ENV PYTHONPATH="/usr/local/lib/python2.7/dist-packages:/usr/lib/python2.7/dist-packages"
+
+RUN pip install consulate
+
+# URL to LDAP
+ENV GLUU_LDAP_URL localhost:1636
+
+# KV store hostname or IP address
+ENV GLUU_KV_HOST localhost
+
+# KV store port
+ENV GLUU_KV_PORT 8500
+
 COPY scripts/entrypoint.sh /opt/scripts/
+COPY scripts/entrypoint.py /opt/scripts/
 RUN chmod +x /opt/scripts/entrypoint.sh
 ENTRYPOINT ["/opt/scripts/entrypoint.sh"]
