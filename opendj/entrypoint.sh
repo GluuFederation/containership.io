@@ -8,4 +8,5 @@ fi
 
 
 #run opendj process
-#exec gosu root /path/of/opendj
+#TODO: fix it, need to run it in forground mode
+exec gosu root /opt/opendj/bin/start-ds --quiet -N
