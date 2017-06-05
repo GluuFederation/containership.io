@@ -45,3 +45,4 @@ COPY templates/oxtrust-import-person.json /opt/config-init/templates/
 COPY templates/passport-config.json /opt/config-init/templates/
 
 ENTRYPOINT ["python", "./entrypoint.py"]
+CMD ["--help"]

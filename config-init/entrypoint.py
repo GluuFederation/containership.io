@@ -172,20 +172,17 @@ def generate_config(admin_pw, email, domain, org_name):
     cfg["passport_rs_client_jks_pass"] = get_random_chars()
 
     cfg["passport_rs_client_jks_pass_encoded"] = encrypt_text(
-        cfg["passport_rs_client_jks_pass"], cfg["encoded_salt"]
-    )
+        cfg["passport_rs_client_jks_pass"], cfg["encoded_salt"])
 
     cfg["shibboleth_version"] = "v3"
     cfg["idp3Folder"] = "/opt/shibboleth-idp"
     cfg["ldap_site_binddn"] = "cn=directory manager,o=site"
 
     cfg["oxauth_config_base64"] = encode_template(
-        "oxauth-config.json", cfg,
-    )
+        "oxauth-config.json", cfg)
 
     cfg["oxauth_static_conf_base64"] = encode_template(
-        "oxauth-static-conf.json", cfg,
-    )
+        "oxauth-static-conf.json", cfg)
 
     cfg["oxauth_error_base64"] = encode_template("oxauth-errors.json", cfg)
     cfg["oxtrust_config_base64"] = encode_template("oxtrust-config.json", cfg)
@@ -230,18 +227,30 @@ def main(admin_pw="admin", email="support@gluu.example.com",
 
 
 @click.command()
-@click.option("--admin-pw", default="admin",
-              help="Password for admin access (default to admin).")
-@click.option("--email", default="support@gluu.example.com",
-              help="Email for support (default to support@gluu.example.com).")
-@click.option("--domain", default="gluu.example.com",
-              help="Domain for Gluu Server (default to gluu.example.com).")
-@click.option("--org-name", default="Gluu",
-              help="Organization name (default to Gluu).")
-@click.option("--kv-host", default="localhost",
-              help="Hostname/IP address of KV store (default to localhost).")
-@click.option("--kv-port", default=8500,
-              help="Port of KV store (default to 8500).")
+@click.option("--admin-pw",
+              default="admin",
+              help="Password for admin access.",
+              show_default=True)
+@click.option("--email",
+              default="support@gluu.example.com",
+              help="Email for support.",
+              show_default=True)
+@click.option("--domain",
+              default="gluu.example.com",
+              help="Domain for Gluu Server.",
+              show_default=True)
+@click.option("--org-name",
+              default="Gluu",
+              help="Organization name.",
+              show_default=True)
+@click.option("--kv-host",
+              default="localhost",
+              help="Hostname/IP address of KV store.",
+              show_default=True)
+@click.option("--kv-port",
+              default=8500,
+              help="Port of KV store.",
+              show_default=True)
 def cli(admin_pw, email, domain, org_name, kv_host, kv_port):
     main(admin_pw, email, domain, org_name, kv_host, kv_port)
 
