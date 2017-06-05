@@ -16,8 +16,8 @@ RUN apt-get update && apt-get install -y --force-yes \
     && rm -rf /var/lib/apt/lists/*
 
 # JAR files required to generate OpenID Connect keys
-RUN mkdir -p /opt/gluu/lib
-RUN wget -q http://ox.gluu.org/maven/org/xdi/oxauth-client/3.1.0-SNAPSHOT/oxauth-client-3.1.0-SNAPSHOT-jar-with-dependencies.jar -O /opt/gluu/lib/keygen.jar
+RUN mkdir -p /opt/config-init/javalibs
+RUN wget -q http://ox.gluu.org/maven/org/xdi/oxauth-client/3.1.0-SNAPSHOT/oxauth-client-3.1.0-SNAPSHOT-jar-with-dependencies.jar -O /opt/config-init/javalibs/keygen.jar
 
 RUN pip install -U pip
 
@@ -43,6 +43,8 @@ COPY templates/oxtrust-cache-refresh.json /opt/config-init/templates/
 COPY templates/oxtrust-config.json /opt/config-init/templates/
 COPY templates/oxtrust-import-person.json /opt/config-init/templates/
 COPY templates/passport-config.json /opt/config-init/templates/
+
+RUN mkdir -p /etc/certs
 
 ENTRYPOINT ["python", "./entrypoint.py"]
 CMD ["--help"]

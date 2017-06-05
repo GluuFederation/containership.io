@@ -2,7 +2,9 @@ import base64
 import hashlib
 import os
 import random
+import shlex
 import string
+import subprocess
 import uuid
 from pprint import pprint
 
@@ -99,6 +101,41 @@ def encode_template(fn, ctx, base_dir="/opt/config-init/templates"):
         return generate_base64_contents(f.read() % ctx)
 
 
+def exec_cmd(cmd):
+    args = shlex.split(cmd)
+    popen = subprocess.Popen(args,
+                             stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+    stdout, stderr = popen.communicate()
+    retcode = popen.returncode
+    return stdout, stderr, retcode
+
+
+def generate_openid_keys(passwd, jks_path, jwks_path, dn,
+                         exp=365, alg="RS512"):
+    if os.path.exists(jks_path):
+        os.unlink(jks_path)
+
+    if os.path.exists(jwks_path):
+        os.unlink(jwks_path)
+
+    cmd = " ".join([
+        "java",
+        "-jar", "/opt/config-init/javalibs/keygen.jar",
+        "-algorithms", alg,
+        "-dnname", "{!r}".format(dn),
+        "-expiration", "{}".format(exp),
+        "-keystore", jks_path,
+        "-keypasswd", passwd,
+    ])
+    out, err, retcode = exec_cmd(cmd)
+    if retcode == 0:
+        with open(jwks_path, "w") as f:
+            f.write(out)
+    return out
+
+
 def generate_config(admin_pw, email, domain, org_name):
     cfg = {}
     cfg["encoded_salt"] = get_random_chars(24)
@@ -155,6 +192,7 @@ def generate_config(admin_pw, email, domain, org_name):
     cfg["default_openid_jks_dn_name"] = "CN=oxAuth CA Certificates"
     cfg["oxauth_openid_jks_fn"] = "/etc/certs/oxauth-keys.jks"
     cfg["oxauth_openid_jks_pass"] = get_random_chars()
+    cfg["oxauth_openid_jwks_fn"] = "/etc/certs/oxauth-keys.json"
     cfg["shibJksFn"] = "/etc/certs/shibIDP.jks"
     cfg["shibJksPass"] = get_random_chars()
     cfg["oxTrustConfigGeneration"] = "false"
@@ -199,12 +237,22 @@ def generate_config(admin_pw, email, domain, org_name):
     cfg["oxasimba_config_base64"] = encode_template(
         "oxasimba-config.json", cfg)
 
+    generate_openid_keys(
+        cfg["oxauth_openid_jks_pass"],
+        cfg["oxauth_openid_jks_fn"],
+        cfg["oxauth_openid_jwks_fn"],
+        cfg["default_openid_jks_dn_name"],
+    )
+    base_dir, fn = os.path.split(cfg["oxauth_openid_jwks_fn"])
+    cfg["oxauth_openid_key_base64"] = encode_template(
+        fn, cfg, base_dir=base_dir)
+
     # TODO:
-    # "oxauth_openid_key_base64"
     # "scim_rs_client_base64_jwks"
     # "scim_rp_client_base64_jwks"
     # "passport_rs_client_base64_jwks"
     # "passport_rp_client_base64_jwks"
+
     # "passport_rp_client_cert_alias" # MUST get 'kid' of passport RP JWKS
     return cfg
 
