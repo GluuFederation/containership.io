@@ -41,6 +41,8 @@ Options:
   --org-name TEXT    Organization name.  [default: Gluu]
   --kv-host TEXT     Hostname/IP address of KV store.  [default: localhost]
   --kv-port INTEGER  Port of KV store.  [default: 8500]
+  --save             Save config to KV store.
+  --view             Show generated config.
   --help             Show this message and exit.
 ```
 
@@ -55,5 +57,7 @@ docker run --rm gluufederation/config-init \
     --domain my.domain.com \
     --org-name 'My Organization' \
     --kv-host consul.my.domain.com \
-    --kv-port 8500
+    --kv-port 8500 \
+    --save \
+    --view
 ```

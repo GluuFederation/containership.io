@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import pprint
 import json
 import os
 import random
@@ -336,21 +337,6 @@ def generate_config(admin_pw, email, domain, org_name):
     return cfg
 
 
-def main(admin_pw="admin", email="support@gluu.example.com",
-         domain="gluu.example.com", org_name="Gluu",
-         kv_host="localhost", kv_port=8500):
-    cfg = generate_config(admin_pw, email, domain, org_name)
-    consul = consulate.Consul(host=kv_host, port=kv_port)
-
-    for k, v in cfg.iteritems():
-        if k in consul.kv:
-            click.echo("{!r} config already exists ... skipping".format(k))
-            continue
-
-        click.echo("saving {!r} config".format(k))
-        consul.kv.set(k, v)
-
-
 @click.command()
 @click.option("--admin-pw",
               default="admin",
@@ -376,9 +362,27 @@ def main(admin_pw="admin", email="support@gluu.example.com",
               default=8500,
               help="Port of KV store.",
               show_default=True)
-def cli(admin_pw, email, domain, org_name, kv_host, kv_port):
-    main(admin_pw, email, domain, org_name, kv_host, kv_port)
+@click.option("--save",
+              default=False,
+              help="Save config to KV store.",
+              is_flag=True)
+@click.option("--view",
+              default=False,
+              help="Show generated config.",
+              is_flag=True)
+def main(admin_pw, email, domain, org_name, kv_host, kv_port, save, view):
+    cfg = generate_config(admin_pw, email, domain, org_name)
+
+    if save:
+        consul = consulate.Consul(host=kv_host, port=kv_port)
+        for k, v in cfg.iteritems():
+            if k in consul.kv:
+                continue
+            consul.kv.set(k, v)
+
+    if view:
+        pprint.pprint(cfg)
 
 
 if __name__ == "__main__":
-    cli()
+    main()
