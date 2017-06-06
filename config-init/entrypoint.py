@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import json
 import os
 import random
 import shlex
@@ -112,8 +113,8 @@ def exec_cmd(cmd):
     return stdout, stderr, retcode
 
 
-def generate_openid_keys(passwd, jks_path, jwks_path, dn,
-                         exp=365, alg="RS512"):
+def generate_openid_keys(passwd, jks_path, jwks_path, dn, exp=365,
+                         alg="RS256 RS384 RS512 ES256 ES384 ES512"):
     if os.path.exists(jks_path):
         os.unlink(jks_path)
 
@@ -136,14 +137,41 @@ def generate_openid_keys(passwd, jks_path, jwks_path, dn,
     return out
 
 
+def encode_keys_template(jks_pass, jks_fn, jwks_fn, cfg):
+    pubkey = generate_openid_keys(
+        jks_pass, jks_fn, jwks_fn, cfg["default_openid_jks_dn_name"])
+    base_dir, fn = os.path.split(jwks_fn)
+    return encode_template(fn, cfg, base_dir=base_dir), pubkey
+
+
 def generate_config(admin_pw, email, domain, org_name):
     cfg = {}
     cfg["encoded_salt"] = get_random_chars(24)
-    cfg["encoded_ldap_pw"] = ldap_encode(admin_pw)
-    cfg["encoded_ox_ldap_pw"] = encrypt_text(admin_pw, cfg["encoded_salt"])
     cfg["orgName"] = org_name
     cfg["hostname"] = domain
     cfg["admin_email"] = email
+    cfg["default_openid_jks_dn_name"] = "CN=oxAuth CA Certificates"
+
+    cfg["pairwiseCalculationKey"] = get_sys_random_chars(
+        random.randint(20, 30))
+
+    cfg["pairwiseCalculationSalt"] = get_sys_random_chars(
+        random.randint(20, 30))
+
+    cfg["shibJksFn"] = "/etc/certs/shibIDP.jks"
+    cfg["shibJksPass"] = get_random_chars()
+    cfg["oxTrustConfigGeneration"] = "false"
+
+    cfg["encoded_shib_jks_pw"] = encrypt_text(
+        cfg["shibJksPass"], cfg["encoded_salt"])
+
+    cfg["shibboleth_version"] = "v3"
+    cfg["idp3Folder"] = "/opt/shibboleth-idp"
+    cfg["jetty_base"] = "/opt/gluu/jetty"
+
+    # ====
+    # LDAP
+    # ====
     cfg["ldap_hostname"] = "N/A"
     cfg["ldapPassFn"] = "N/A"
     cfg["ldap_port"] = 1389
@@ -152,7 +180,13 @@ def generate_config(admin_pw, email, domain, org_name):
     cfg["ldap_binddn"] = cfg["opendj_ldap_binddn"] = "cn=directory manager"
     cfg["ldaps_port"] = 1636
     cfg["ldap_backend_type"] = "je"
-    cfg["jetty_base"] = "/opt/gluu/jetty"
+    cfg["ldap_site_binddn"] = "cn=directory manager,o=site"
+    cfg["encoded_ldap_pw"] = ldap_encode(admin_pw)
+    cfg["encoded_ox_ldap_pw"] = encrypt_text(admin_pw, cfg["encoded_salt"])
+
+    # ====
+    # Inum
+    # ====
     cfg["baseInum"] = "@!{}".format(join_quad_str(4))
     cfg["inumOrg"] = "{}!0001!{}".format(cfg["baseInum"], join_quad_str(2))
     cfg["inumOrgFN"] = safe_inum_str(cfg["inumOrg"])
@@ -162,59 +196,18 @@ def generate_config(admin_pw, email, domain, org_name):
 
     cfg["inumApplianceFN"] = safe_inum_str(cfg["inumAppliance"])
 
+    # ======
+    # oxAuth
+    # ======
     cfg["oxauth_client_id"] = "{}!0008!{}".format(
         cfg["inumOrg"], join_quad_str(2))
 
     cfg["oxauthClient_encoded_pw"] = encrypt_text(
         get_random_chars(), cfg["encoded_salt"])
 
-    cfg["scim_rs_client_id"] = "{}!0008!{}".format(
-        cfg["inumOrg"], join_quad_str(2))
-
-    cfg["scim_rp_client_id"] = "{}!0008!{}".format(
-        cfg["inumOrg"], join_quad_str(2))
-
-    cfg["passport_rs_client_id"] = "{}!0008!{}".format(
-        cfg["inumOrg"], join_quad_str(2))
-
-    cfg["passport_rp_client_id"] = "{}!0008!{}".format(
-        cfg["inumOrg"], join_quad_str(2))
-
-    cfg["passport_rp_client_cert_fn"] = "/etc/certs/passport-rp.pem"
-    cfg["passport_rp_client_cert_alg"] = "RS512"
-
-    cfg["pairwiseCalculationKey"] = get_sys_random_chars(
-        random.randint(20, 30))
-
-    cfg["pairwiseCalculationSalt"] = get_sys_random_chars(
-        random.randint(20, 30))
-
-    cfg["default_openid_jks_dn_name"] = "CN=oxAuth CA Certificates"
     cfg["oxauth_openid_jks_fn"] = "/etc/certs/oxauth-keys.jks"
     cfg["oxauth_openid_jks_pass"] = get_random_chars()
     cfg["oxauth_openid_jwks_fn"] = "/etc/certs/oxauth-keys.json"
-    cfg["shibJksFn"] = "/etc/certs/shibIDP.jks"
-    cfg["shibJksPass"] = get_random_chars()
-    cfg["oxTrustConfigGeneration"] = "false"
-
-    cfg["encoded_shib_jks_pw"] = encrypt_text(
-        cfg["shibJksPass"], cfg["encoded_salt"])
-
-    cfg["scim_rs_client_jks_fn"] = "/etc/certs/scim-rs.jks"
-    cfg["scim_rs_client_jks_pass"] = get_random_chars()
-
-    cfg["scim_rs_client_jks_pass_encoded"] = encrypt_text(
-        cfg["scim_rs_client_jks_pass"], cfg["encoded_salt"])
-
-    cfg["passport_rs_client_jks_fn"] = "/etc/certs/passport-rs.jks"
-    cfg["passport_rs_client_jks_pass"] = get_random_chars()
-
-    cfg["passport_rs_client_jks_pass_encoded"] = encrypt_text(
-        cfg["passport_rs_client_jks_pass"], cfg["encoded_salt"])
-
-    cfg["shibboleth_version"] = "v3"
-    cfg["idp3Folder"] = "/opt/shibboleth-idp"
-    cfg["ldap_site_binddn"] = "cn=directory manager,o=site"
 
     cfg["oxauth_config_base64"] = encode_template(
         "oxauth-config.json", cfg)
@@ -223,6 +216,100 @@ def generate_config(admin_pw, email, domain, org_name):
         "oxauth-static-conf.json", cfg)
 
     cfg["oxauth_error_base64"] = encode_template("oxauth-errors.json", cfg)
+
+    cfg["oxauth_openid_key_base64"], _ = encode_keys_template(
+        cfg["oxauth_openid_jks_pass"],
+        cfg["oxauth_openid_jks_fn"],
+        cfg["oxauth_openid_jwks_fn"],
+        cfg,
+    )
+
+    # =======
+    # SCIM RS
+    # =======
+    cfg["scim_rs_client_id"] = "{}!0008!{}".format(
+        cfg["inumOrg"], join_quad_str(2))
+
+    cfg["scim_rs_client_jks_fn"] = "/etc/certs/scim-rs.jks"
+    cfg["scim_rs_client_jwks_fn"] = "/etc/certs/scim-rs-keys.json"
+    cfg["scim_rs_client_jks_pass"] = get_random_chars()
+
+    cfg["scim_rs_client_jks_pass_encoded"] = encrypt_text(
+        cfg["scim_rs_client_jks_pass"], cfg["encoded_salt"])
+
+    cfg["scim_rs_client_base64_jwks"], _ = encode_keys_template(
+        cfg["scim_rs_client_jks_pass"],
+        cfg["scim_rs_client_jks_fn"],
+        cfg["scim_rs_client_jwks_fn"],
+        cfg,
+    )
+
+    # =======
+    # SCIM RP
+    # =======
+    cfg["scim_rp_client_id"] = "{}!0008!{}".format(
+        cfg["inumOrg"], join_quad_str(2))
+
+    cfg["scim_rp_client_jks_fn"] = "/etc/certs/scim-rp.jks"
+    cfg["scim_rp_client_jwks_fn"] = "/etc/certs/scim-rp-keys.json"
+    cfg["scim_rp_client_jks_pass"] = get_random_chars()
+
+    cfg["scim_rp_client_jks_pass_encoded"] = encrypt_text(
+        cfg["scim_rp_client_jks_pass"], cfg["encoded_salt"])
+
+    cfg["scim_rp_client_base64_jwks"], _ = encode_keys_template(
+        cfg["scim_rp_client_jks_pass"],
+        cfg["scim_rp_client_jks_fn"],
+        cfg["scim_rp_client_jwks_fn"],
+        cfg,
+    )
+
+    # ===========
+    # Passport RS
+    # ===========
+    cfg["passport_rs_client_id"] = "{}!0008!{}".format(
+        cfg["inumOrg"], join_quad_str(2))
+
+    cfg["passport_rs_client_jks_fn"] = "/etc/certs/passport-rs.jks"
+    cfg["passport_rs_client_jwks_fn"] = "/etc/certs/passport-rs-keys.json"
+    cfg["passport_rs_client_jks_pass"] = get_random_chars()
+
+    cfg["passport_rs_client_jks_pass_encoded"] = encrypt_text(
+        cfg["passport_rs_client_jks_pass"], cfg["encoded_salt"])
+
+    cfg["passport_rs_client_base64_jwks"], _ = encode_keys_template(
+        cfg["passport_rs_client_jks_pass"],
+        cfg["passport_rs_client_jks_fn"],
+        cfg["passport_rs_client_jwks_fn"],
+        cfg,
+    )
+
+    # ===========
+    # Passport RP
+    # ===========
+    cfg["passport_rp_client_id"] = "{}!0008!{}".format(
+        cfg["inumOrg"], join_quad_str(2))
+
+    cfg["passport_rp_client_jks_pass"] = get_random_chars()
+    cfg["passport_rp_client_jks_fn"] = "/etc/certs/passport-rp.jks"
+    cfg["passport_rp_client_jwks_fn"] = "/etc/certs/passport-rp-keys.json"
+    cfg["passport_rp_client_cert_fn"] = "/etc/certs/passport-rp.pem"
+    cfg["passport_rp_client_cert_alg"] = "RS512"
+
+    cfg["passport_rp_client_base64_jwks"], pubkey = encode_keys_template(
+        cfg["passport_rp_client_jks_pass"],
+        cfg["passport_rp_client_jks_fn"],
+        cfg["passport_rp_client_jwks_fn"],
+        cfg,
+    )
+
+    for key in json.loads(pubkey)["keys"]:
+        if key["alg"] == cfg["passport_rp_client_cert_alg"]:
+            cfg["passport_rp_client_cert_alias"] = key["kid"]
+
+    # =======
+    # oxTrust
+    # =======
     cfg["oxtrust_config_base64"] = encode_template("oxtrust-config.json", cfg)
 
     cfg["oxtrust_cache_refresh_base64"] = encode_template(
@@ -231,29 +318,22 @@ def generate_config(admin_pw, email, domain, org_name):
     cfg["oxtrust_import_person_base64"] = encode_template(
         "oxtrust-import-person.json", cfg)
 
+    # =====
+    # oxIDP
+    # =====
     cfg["oxidp_config_base64"] = encode_template("oxidp-config.json", cfg)
+
+    # =====
+    # oxCAS
+    # =====
     cfg["oxcas_config_base64"] = encode_template("oxcas-config.json", cfg)
 
+    # ========
+    # oxAsimba
+    # ========
     cfg["oxasimba_config_base64"] = encode_template(
         "oxasimba-config.json", cfg)
 
-    generate_openid_keys(
-        cfg["oxauth_openid_jks_pass"],
-        cfg["oxauth_openid_jks_fn"],
-        cfg["oxauth_openid_jwks_fn"],
-        cfg["default_openid_jks_dn_name"],
-    )
-    base_dir, fn = os.path.split(cfg["oxauth_openid_jwks_fn"])
-    cfg["oxauth_openid_key_base64"] = encode_template(
-        fn, cfg, base_dir=base_dir)
-
-    # TODO:
-    # "scim_rs_client_base64_jwks"
-    # "scim_rp_client_base64_jwks"
-    # "passport_rs_client_base64_jwks"
-    # "passport_rp_client_base64_jwks"
-
-    # "passport_rp_client_cert_alias" # MUST get 'kid' of passport RP JWKS
     return cfg
 
 
