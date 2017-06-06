@@ -7,7 +7,6 @@ import shlex
 import string
 import subprocess
 import uuid
-from pprint import pprint
 
 import click
 import consulate
@@ -341,8 +340,6 @@ def main(admin_pw="admin", email="support@gluu.example.com",
          domain="gluu.example.com", org_name="Gluu",
          kv_host="localhost", kv_port=8500):
     cfg = generate_config(admin_pw, email, domain, org_name)
-    pprint(cfg)
-
     consul = consulate.Consul(host=kv_host, port=kv_port)
 
     for k, v in cfg.iteritems():
@@ -350,7 +347,7 @@ def main(admin_pw="admin", email="support@gluu.example.com",
             click.echo("{!r} config already exists ... skipping".format(k))
             continue
 
-        click.echo("setting {!r} config".format(k))
+        click.echo("saving {!r} config".format(k))
         consul.kv.set(k, v)
 
 
