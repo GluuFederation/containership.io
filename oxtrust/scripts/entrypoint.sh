@@ -13,10 +13,34 @@ import_ssl_cert() {
     fi
 }
 
+download_custom_tar() {
+    if [ ! -z ${GLUU_CUSTOM_OXTRUST_URL} ]; then
+        mkdir -p /tmp/identity
+        wget -q ${GLUU_CUSTOM_OXTRUST_URL} -O /tmp/identity/custom-identity.tar.gz
+        cd /tmp/identity
+        tar xf custom-identity.tar.gz
+
+        if [ -d /tmp/identity/pages ]; then
+            cp -R /tmp/identity/pages/* /opt/gluu/jetty/identity/custom/pages/
+        fi
+
+        if [ -d /tmp/identity/static ]; then
+            cp -R /tmp/identity/static/* /opt/gluu/jetty/identity/custom/static/
+        fi
+
+        if [ -d /tmp/identity/libs ]; then
+            cp -R /tmp/identity/libs/* /opt/gluu/jetty/identity/lib/ext/
+        fi
+    fi
+}
+
+
+
 if [ ! -f /touched ]; then
-    touch /touched
+    download_custom_tar
     python /opt/scripts/entrypoint.py
     import_ssl_cert
+    touch /touched
 fi
 
 cd /opt/gluu/jetty/identity
