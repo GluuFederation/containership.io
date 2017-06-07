@@ -3,7 +3,6 @@ import os
 import consulate
 
 
-GLUU_DOMAIN = os.environ.get("GLUU_DOMAIN", "localhost")
 GLUU_OXAUTH_BACKEND = os.environ.get("GLUU_OXAUTH_BACKEND", "localhost:8081")
 GLUU_OXTRUST_BACKEND = os.environ.get("GLUU_OXTRUST_BACKEND", "localhost:8082")
 GLUU_KV_HOST = os.environ.get("GLUU_KV_HOST", "localhost")
@@ -34,7 +33,7 @@ def render_nginx_conf():
     if txt:
         with open("/etc/nginx/sites-available/gluu_https.conf", "w") as fd:
             rendered_txt = txt % {
-                "gluu_domain": GLUU_DOMAIN,
+                "gluu_domain": consul.kv.get("hostname", "localhost"),
                 "gluu_oxauth_backend": GLUU_OXAUTH_BACKEND,
                 "gluu_oxtrust_backend": GLUU_OXTRUST_BACKEND,
             }

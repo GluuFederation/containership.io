@@ -40,9 +40,6 @@ LABEL vendor="Gluu Federation"
 EXPOSE 80
 EXPOSE 443
 
-# Gluu Server domain, e.g. my.cluster.com
-ENV GLUU_DOMAIN localhost
-
 # oxAuth backend URL, e.g. my.cluster.com:8081
 ENV GLUU_OXAUTH_BACKEND localhost:8081
 
