@@ -1,4 +1,4 @@
-# oxAuth
+# oxTrust
 
 A docker image version of oxTrust.
 
