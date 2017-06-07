@@ -134,6 +134,9 @@ ENV GLUU_KV_HOST localhost
 # KV store port
 ENV GLUU_KV_PORT 8500
 
+# URL to downloadable tar.gz contains custom pages, static, and libs for oxAuth
+ENV GLUU_CUSTOM_OXAUTH_URL ""
+
 COPY scripts/entrypoint.sh /opt/scripts/
 COPY scripts/entrypoint.py /opt/scripts/
 RUN chmod +x /opt/scripts/entrypoint.sh
