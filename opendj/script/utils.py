@@ -2,6 +2,7 @@ import tempfile
 from subprocess import Popen
 from subprocess import PIPE
 
+
 def po_run(cmd_str, raise_error=True):
     cmd_list = cmd_str.strip().split()
 
@@ -15,6 +16,7 @@ def po_run(cmd_str, raise_error=True):
         return stdout.strip(), stderr.strip(), error_code
     except OSError as exc:
         raise RuntimeError("return code {}: {}".format(exc.errno, exc.strerror))
+
 
 def render_template(src, dest, ctx=None):
         """Renders non-jinja template.
@@ -34,4 +36,3 @@ def render_template(src, dest, ctx=None):
             fp.write(rendered_content)
 
         shutil.copyfile(local, dest)
-

@@ -3,17 +3,18 @@
 #
 # All rights reserved.
 import os
+import socket
 import utils
 
 import consulate
 
-consul = consulate.Consul(host=GLUU_DATASTORE, port=GLUU_DATASTORE_PORT)
-
 #ENV VARS
 GLUU_DATASTORE = os.environ.get('GLUU_DATASTORE', 'localhost')
 GLUU_DATASTORE_PORT = os.environ.get('GLUU_DATASTORE_PORT', 8500)
-GLUU_REPLICATE_FROM = os.environ.get('GLUU_REPLICATE_FROM', None)
-GLUU_REPLICATE_PORT = 8989
+GLUU_REPLICATE_FROM = os.environ.get('GLUU_REPLICATE_FROM', 'remote.ldap.service')
+GLUU_REPLICATE_PORT = os.environ.get('GLUU_REPLICATE_PORT', 8989)
+
+consul = consulate.Consul(host=GLUU_DATASTORE, port=GLUU_DATASTORE_PORT)
 
 # LDAP
 LDAP_BASE = '/opt/opendj'
@@ -22,17 +23,19 @@ LDAP_DS_JAVA_PROP_COMMAND = '/opt/opendj/bin/dsjavaproperties'
 LDAP_DSCONFIG_COMMAND = '/opt/opendj/bin/dsconfig'
 LDAP_ADMIN_PORT = consul.kv.get('ldap_admin_port')
 LDAP_BINDDN = consul.kv.get('ldap_binddn')
-LDAP_PASS_FN = consul.kv.get('ldap_pass_fn') #TODO fix encoded pass, passkey and use pass file or not
+LDAP_PW_FILE = '/opt/gluu/garbage/secret/.pw'
 
-#LDAP_ENCODED_PASS = consul.kv.get('ldap_encoded_pw')
-#LDAP_PW_FILE_PATH = '/opt/gluu/garbage/secret/.pw'
+#TEMPLATES = '/opt/data/templates'
+#STATIC = '/opt/data/static'
+
+def get_hostname():
+    return socket.gethostname()
 
 def setup_opendj():
     """Setups OpenDJ server without actually running the server
     in post-installation step.
     """
-
-    src = '/opt/gluu/opendj/templates/opendj-setup.properties'
+    src = '/gluu/data/templates/opendj-setup.properties'
     dest = os.path.join(LDAP_BASE, os.path.basename(src))
     ctx = {
         "ldap_hostname": consul.kv.get('ldap_hostname'),
@@ -41,8 +44,8 @@ def setup_opendj():
         "ldap_jmx_port": consul.kv.get('ldap_jmx_port'),
         "ldap_admin_port": consul.kv.get('ldap_admin_port'),
         "ldap_binddn": consul.kv.get('ldap_binddn'),
-        "ldap_pass_fn": consul.kv.get('ldap_pass_fn'), #TODO fix encoded pass, passkey and use pass file or not
-        "ldap_backend_type": "je",  # OpenDJ 3.0
+        "ldap_pw_file": LDAP_PW_FILE,
+        "ldap_backend_type": "je",
     }
     utils.render_template(src, dest, ctx)
 
@@ -56,7 +59,6 @@ def setup_opendj():
 
 def configure_opendj():
     #Configures OpenDJ.
-
     config_changes = [
         "set-global-configuration-prop --set single-structural-objectclass-behavior:accept",
         "set-attribute-syntax-prop --syntax-name 'Directory String' --set allow-zero-length-values:true",
@@ -74,10 +76,10 @@ def configure_opendj():
             self.LDAP_DSCONFIG_COMMAND,
             '--trustAll',
             '--no-prompt',
-            '--hostname', 'localhost', #self.container.hostname, #TODO: fix me
+            '--hostname', get_hostname(),
             '--port', LDAP_ADMIN_PORT,
             '--bindDN', "'{}'".format(LDAP_BINDDN),
-            '--bindPasswordFile', LDAP_PASS_FN,
+            '--bindPasswordFile', LDAP_PW_FILE,
             changes,
         ])
 
@@ -87,7 +89,7 @@ def configure_opendj():
 def index_opendj(backend):
     #Creates required index in OpenDJ server.
     
-    src = "/opt/gluu/opendj/static/opendj_index.json"
+    src = "/gluu/data/static/opendj_index.json"
     with open(src, "r") as fp:
         data = fp.read()
 
@@ -113,10 +115,10 @@ def index_opendj(backend):
                     '--index-name', attr_name,
                     '--set', 'index-type:%s' % index_type,
                     '--set', 'index-entry-limit:4000',
-                    '--hostName', 'localhost', #self.container.hostname, #TODO: fix me
+                    '--hostName', get_hostname(),
                     '--port', LDAP_ADMIN_PORT,
                     '--bindDN', "'{}'".format(LDAP_BINDDN),
-                    '-j', LDAP_PASS_FN,
+                    '-j', LDAP_PW_FILE,
                     '--trustAll', '--noPropertiesFile', '--no-prompt',
                 ])
                 utils.po_run(index_cmd)
@@ -144,18 +146,18 @@ def replicate(peer):
     for base_dn in base_dns:
         enable_cmd = " ".join([
             "/opt/opendj/bin/dsreplication", "enable",
-            "--host1", peer.hostname, #TODO: how to get peer host name
+            "--host1", GLUU_REPLICATE_FROM,
             "--port1", LDAP_ADMIN_PORT,
             "--bindDN1", "'{}'".format(LDAP_BINDDN),
-            "--bindPasswordFile1", LDAP_PASS_FN,
+            "--bindPasswordFile1", LDAP_PW_FILE,
             "--replicationPort1", GLUU_REPLICATE_PORT,
-            "--host2", 'localhost', #self.container.hostname, #TODO: fix me
+            "--host2", get_hostname(),
             "--port2", LDAP_ADMIN_PORT,
             "--bindDN2", "'{}'".format(LDAP_BINDDN),
-            "--bindPasswordFile2", LDAP_PASS_FN,
+            "--bindPasswordFile2", LDAP_PW_FILE,
             "--replicationPort2", GLUU_REPLICATE_PORT,
             "--adminUID", "admin",
-            "--adminPasswordFile", LDAP_PASS_FN,
+            "--adminPasswordFile", LDAP_PW_FILE,
             "--baseDN", "'{}'".format(base_dn),
             "--secureReplication1", "--secureReplication2",
             "-X", "-n", "-Q",
@@ -170,10 +172,10 @@ def replicate(peer):
             "/opt/opendj/bin/dsreplication", "initialize",
             "--baseDN", "'{}'".format(base_dn),
             "--adminUID", "admin",
-            "--adminPasswordFile", LDAP_PASS_FN,
-            "--hostSource", peer.hostname, #TODO: how to get peer host name
+            "--adminPasswordFile", LDAP_PW_FILE,
+            "--hostSource", GLUU_REPLICATE_FROM,
             "--portSource", LDAP_ADMIN_PORT,
-            "--hostDestination", 'localhost', #self.container.hostname, #TODO: fix me
+            "--hostDestination", get_hostname(),
             "--portDestination", LDAP_ADMIN_PORT,
             "-X", "-n", "-Q",
         ])
@@ -181,21 +183,23 @@ def replicate(peer):
         time.sleep(5)
 
 def store_pw():
-    with open(LDAP_PW_FILE_PATH, 'w') as fp:
-        fp.write(LDAP_ENCODED_PASS)
+    ldap_encoded_pw = consul.kv.get('ldap_encoded_pw', "a_default_encoded_pass") #TODO: need to set a default encoded pw
+    with open(LDAP_PW_FILE, 'w') as fp:
+        fp.write(ldap_encoded_pw)
 
 def del_pw():
-    if os.path.isfile(LDAP_PW_FILE_PATH):
-        os.remove(LDAP_PW_FILE_PATH)
+    if os.path.isfile(LDAP_PW_FILE):
+        os.remove(LDAP_PW_FILE)
 
 def run():
-    store_pw()
-    setup_opendj()
-    configure_opendj()
-    index_opendj("site")
-    index_opendj("userRoot")
-    replicate()
-    del_pw()
+    # store_pw()
+    # setup_opendj()
+    # configure_opendj()
+    # index_opendj("site")
+    # index_opendj("userRoot")
+    # replicate()
+    # del_pw()
+    utils.dummy()
 
 
 if __name__ == '__main__':
