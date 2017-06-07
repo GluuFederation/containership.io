@@ -10,6 +10,12 @@ Build the image:
 docker build --rm --force-rm -t gluufederation/nginx:containership .
 ```
 
+Or get it from Docker Hub:
+
+```
+docker pull gluufederation/nginx:containership
+```
+
 ## Running The Container
 
 Here's an example to run the container:

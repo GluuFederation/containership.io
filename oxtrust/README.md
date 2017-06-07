@@ -10,6 +10,12 @@ Build the image:
 docker build --rm --force-rm -t gluufederation/oxtrust:containership .
 ```
 
+Or get it from Docker Hub:
+
+```
+docker pull gluufederation/oxtrust:containership
+```
+
 ## Environment Variables
 
 - `GLUU_KV_HOST`: hostname or IP address of Consul.
