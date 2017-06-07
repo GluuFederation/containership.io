@@ -18,11 +18,6 @@ docker pull gluufederation/config-init
 
 ## Running The Container
 
-Prerequisites:
-
-- Make sure docker daemon is running.
-- Make sure Consul container is running.
-
 To run this container and see available options, type the following command:
 
 ```
@@ -54,8 +49,8 @@ Here's an example to generate config (and save them to Consul KV):
 
 ```
 docker run --rm \
-    -e /path/to/org_ssl.crt:/etc/certs/gluu_https.crt \
-    -e /path/to/org_ssl.key:/etc/certs/gluu_https.key \
+    -v /path/to/org_ssl.crt:/etc/certs/gluu_https.crt \
+    -v /path/to/org_ssl.key:/etc/certs/gluu_https.key \
     gluufederation/config-init \
     --admin-pw my-password \
     --email 'my-email@my.domain.com' \
