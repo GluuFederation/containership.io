@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import pprint
 import json
 import os
 import random
@@ -143,7 +144,7 @@ def encode_keys_template(jks_pass, jks_fn, jwks_fn, cfg):
     return encode_template(fn, cfg, base_dir=base_dir), pubkey
 
 
-def generate_config(admin_pw, email, domain, org_name):
+def generate_config(admin_pw, email, domain, org_name, ssl_cert, ssl_key):
     cfg = {}
     cfg["encoded_salt"] = get_random_chars(24)
     cfg["orgName"] = org_name
@@ -333,22 +334,21 @@ def generate_config(admin_pw, email, domain, org_name):
     cfg["oxasimba_config_base64"] = encode_template(
         "oxasimba-config.json", cfg)
 
+    # ================
+    # SSL cert and key
+    # ================
+    cfg["ssl_cert"] = ""
+    if os.path.exists(ssl_cert):
+        with open(ssl_cert) as f:
+            cfg["ssl_cert"] = f.read()
+
+    cfg["ssl_key"] = ""
+    if os.path.exists(ssl_key):
+        with open(ssl_key) as f:
+            cfg["ssl_key"] = f.read()
+
+    # populated config
     return cfg
-
-
-def main(admin_pw="admin", email="support@gluu.example.com",
-         domain="gluu.example.com", org_name="Gluu",
-         kv_host="localhost", kv_port=8500):
-    cfg = generate_config(admin_pw, email, domain, org_name)
-    consul = consulate.Consul(host=kv_host, port=kv_port)
-
-    for k, v in cfg.iteritems():
-        if k in consul.kv:
-            click.echo("{!r} config already exists ... skipping".format(k))
-            continue
-
-        click.echo("saving {!r} config".format(k))
-        consul.kv.set(k, v)
 
 
 @click.command()
@@ -376,9 +376,37 @@ def main(admin_pw="admin", email="support@gluu.example.com",
               default=8500,
               help="Port of KV store.",
               show_default=True)
-def cli(admin_pw, email, domain, org_name, kv_host, kv_port):
-    main(admin_pw, email, domain, org_name, kv_host, kv_port)
+@click.option("--ssl-cert",
+              default="/etc/certs/gluu_https.crt",
+              help="Path to SSL certificate.",
+              show_default=True)
+@click.option("--ssl-key",
+              default="/etc/certs/gluu_https.key",
+              help="Path to SSL key.",
+              show_default=True)
+@click.option("--save",
+              default=False,
+              help="Save config to KV store.",
+              is_flag=True)
+@click.option("--view",
+              default=False,
+              help="Show generated config.",
+              is_flag=True)
+def main(admin_pw, email, domain, org_name, kv_host, kv_port,
+         ssl_cert, ssl_key, save, view):
+    # generate all config
+    cfg = generate_config(admin_pw, email, domain, org_name, ssl_cert, ssl_key)
+
+    if save:
+        consul = consulate.Consul(host=kv_host, port=kv_port)
+        for k, v in cfg.iteritems():
+            if k in consul.kv:
+                continue
+            consul.kv.set(k, v)
+
+    if view:
+        pprint.pprint(cfg)
 
 
 if __name__ == "__main__":
-    cli()
+    main()

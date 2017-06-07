@@ -10,7 +10,7 @@ consul = consulate.Consul(host=GLUU_KV_HOST, port=GLUU_KV_PORT)
 
 
 def render_salt():
-    encode_salt = consul.kv.get("encode_salt")
+    encode_salt = consul.kv.get("encoded_salt")
 
     with open("/opt/templates/salt.tmpl") as fr:
         txt = fr.read()
