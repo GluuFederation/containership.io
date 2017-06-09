@@ -61,3 +61,31 @@ docker run --rm \
     --save \
     --view
 ```
+
+## FAQ
+
+1.  How to connect to remote Consul KV that bind into private IP address?
+
+    By using SSH tunneling, config-init will be able to connect to the KV.
+    For example:
+
+    ```
+    ssh -L 8500:<PRIVATE-IP-ADDR>:<CONSUL-CLIENT-PORT> <SSH-USER>@<REMOTE-SERVER>
+    ```
+
+    Afterwards, pass `--kv-port 8500` option when running the container:
+
+    ```
+    docker run --rm \
+        -v /path/to/org_ssl.crt:/etc/certs/gluu_https.crt \
+        -v /path/to/org_ssl.key:/etc/certs/gluu_https.key \
+        gluufederation/config-init \
+        --admin-pw my-password \
+        --email 'my-email@my.domain.com' \
+        --domain my.domain.com \
+        --org-name 'My Organization' \
+        --kv-host consul.my.domain.com \
+        --kv-port 8500 \
+        --save \
+        --view
+    ```
