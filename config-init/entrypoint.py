@@ -175,11 +175,12 @@ def generate_config(admin_pw, email, domain, org_name, ssl_cert, ssl_key):
     cfg["ldap_hostname"] = "N/A"
     cfg["ldapPassFn"] = "N/A"
     cfg["ldap_port"] = 1389
-    cfg["ldap_admin_port"] = 4444
-    cfg["ldap_jmx_port"] = 1689
-    cfg["ldap_binddn"] = cfg["opendj_ldap_binddn"] = "cn=directory manager"
+    cfg["ldap_admin_port"] = 4444  # for OpenDJ
+    cfg["ldap_jmx_port"] = 1689  # for OpenDJ
+    cfg["ldap_binddn"] = "cn=directory manager,o=gluu"  # for OpenLDAP
+    cfg["opendj_ldap_binddn"] = "cn=directory manager"  # for OpenDJ
     cfg["ldaps_port"] = 1636
-    cfg["ldap_backend_type"] = "je"
+    cfg["ldap_backend_type"] = "je"  # for OpenDJ
     cfg["ldap_site_binddn"] = "cn=directory manager,o=site"
     cfg["encoded_ldap_pw"] = ldap_encode(admin_pw)
     cfg["encoded_ox_ldap_pw"] = encrypt_text(admin_pw, cfg["encoded_salt"])

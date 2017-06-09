@@ -135,6 +135,11 @@ ENV GLUU_KV_PORT 8500
 # URL to downloadable tar.gz contains custom pages, static, and libs for oxTrust
 ENV GLUU_CUSTOM_OXTRUST_URL ""
 
+VOLUME ${JETTY_BASE}/identity/custom/pages
+VOLUME ${JETTY_BASE}/identity/custom/static
+VOLUME ${JETTY_BASE}/identity/lib/ext
+
+
 COPY scripts/entrypoint.sh /opt/scripts/
 COPY scripts/entrypoint.py /opt/scripts/
 RUN chmod +x /opt/scripts/entrypoint.sh

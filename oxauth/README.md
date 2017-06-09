@@ -21,7 +21,13 @@ docker pull gluufederation/oxauth:containership
 - `GLUU_KV_HOST`: hostname or IP address of Consul.
 - `GLUU_KV_PORT`: port of Consul.
 - `GLUU_LDAP_URL`: URL to LDAP (single instance or load-balanced).
-- `GLUU_CUSTOM_OXTRUST_URL`: URL to downloadable custom oxTrust files packed using `.tar.gz` format.
+- `GLUU_CUSTOM_OXAUTH_URL`: URL to downloadable custom oxAuth files packed using `.tar.gz` format.
+
+## Volumes
+
+1. `/opt/gluu/jetty/oxauth/custom/pages` directory
+2. `/opt/gluu/jetty/oxauth/custom/static` directory
+3. `/opt/gluu/jetty/oxauth/lib/ext` directory
 
 ## Running The Container
 
@@ -36,3 +42,36 @@ docker run -d \
     -e GLUU_CUSTOM_OXAUTH_URL=http://my.domain.com/resources/custom-oxauth.tar.gz \
     gluufederation/oxauth:containership
 ```
+
+## Customizing oxAuth
+
+oxAuth can be customized by providing HTML pages, static resource files (i.e. CSS), or JAR libraries.
+
+There are 2 ways to run oxAuth with custom files:
+
+1.  Pass `GLUU_CUSTOM_OXAUTH_URL` environment variable; the container will download and extract the file into
+    appropriate location before running the application.
+
+    ```
+    docker run -d \
+        --name oxauth \
+        -e GLUU_KV_HOST=my.consul.domain.com \
+        -e GLUU_KV_PORT=8500 \
+        -e GLUU_LDAP_URL=my.ldap.domain.com:1636 \
+        -e GLUU_CUSTOM_OXAUTH_URL=http://my.domain.com/resources/custom-oxauth.tar.gz \
+        gluufederation/oxauth:containership
+    ```
+
+2.  Map volumes from host to container.
+
+    ```
+    docker run -d \
+        --name oxauth \
+        -e GLUU_KV_HOST=my.consul.domain.com \
+        -e GLUU_KV_PORT=8500 \
+        -e GLUU_LDAP_URL=my.ldap.domain.com:1636 \
+        -v /path/to/custom/pages:/opt/gluu/jetty/oxauth/custom/pages \
+        -v /path/to/custom/static:/opt/gluu/jetty/oxauth/custom/static \
+        -v /path/to/custom/lib:/opt/gluu/jetty/oxauth/lib/ext \
+        gluufederation/oxauth:containership
+    ```
