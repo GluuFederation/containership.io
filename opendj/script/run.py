@@ -183,7 +183,7 @@ def replicate(peer):
         time.sleep(5)
 
 def store_pw():
-    ldap_encoded_pw = consul.kv.get('ldap_encoded_pw', "a_default_encoded_pass") #TODO: need to set a default encoded pw
+    ldap_encoded_pw = consul.kv.get('encoded_ldap_pw', "a_default_encoded_pass") #TODO: need to set a default encoded pw
     with open(LDAP_PW_FILE, 'w') as fp:
         fp.write(ldap_encoded_pw)
 
