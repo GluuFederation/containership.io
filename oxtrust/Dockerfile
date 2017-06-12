@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     wget \
     python \
     python-pip \
+    facter \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
