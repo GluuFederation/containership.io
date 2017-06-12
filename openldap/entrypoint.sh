@@ -8,4 +8,5 @@ fi
 
 
 #run openldap process
-exec gosu root /opt/symas/lib64/slapd -d 32768 -u root -g root -h ldap://127.0.0.1:1389/
+# TODO: currently using port 1636 but will change to 1389
+exec gosu root /opt/symas/lib64/slapd -d 32768 -u root -g root -h ldap://0.0.0.0:1636/

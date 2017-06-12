@@ -5,6 +5,7 @@ import glob
 import tempfile
 import shutil
 import traceback
+import socket
 
 import consulate
 
@@ -89,7 +90,10 @@ def render_ldif():
         # oxpassport-config.ldif
         'inumAppliance': consul.kv.get('inumAppliance'),
         # TODO: fix how to get ldap_hostname
-        'ldap_hostname': consul.kv.get('ldap_hostname'),
+        'ldap_hostname': consul.kv.get('ldap_hostname', socket.gethostname()),
+        # TODO: currently using std ldaps port 1636 as ldap port.
+        # after basic testing we need to do it right, and remove this hack.
+        # to do this properly we need to update all templates. 
         'ldaps_port': consul.kv.get('ldaps_port'),
         'ldap_binddn': consul.kv.get('ldap_binddn'),
         'encoded_ox_ldap_pw': consul.kv.get('encoded_ox_ldap_pw'),
@@ -154,10 +158,29 @@ def render_ldif():
 
 
 def import_ldif():
+    ldif_import_order = [
+                        'base.ldif',
+                        'appliance.ldif',
+                        'attributes.ldif',
+                        'scopes.ldif',
+                        'clients.ldif',
+                        'people.ldif',
+                        'groups.ldif',
+                        'o_site.ldif',
+                        'scripts.ldif',
+                        'configuration.ldif',
+                        'scim.ldif',
+                        'asimba.ldif',
+                        'passport.ldif',
+                        'oxpassport-config.ldif',
+                        'oxidp.ldif'
+                    ]
+
     slapadd_cmd = '/opt/symas/bin/slapadd'
-    pattern = '/*.ldif'
     config = '/opt/symas/etc/openldap/slapd.conf'
-    for ldif_file_path in glob.glob(TMPDIR+pattern):
+
+    for ldif_file in ldif_import_order:
+        ldif_file_path = os.path.join(TMPDIR, ldif_file)
         if 'site.ldif' in ldif_file_path:
             runcmd([slapadd_cmd, '-b', 'o=site', '-f', config, '-l', ldif_file_path])
         else:
