@@ -8,13 +8,13 @@ import shutil
 import consulate
 
 
-GLUU_DATASTORE = os.environ.get('GLUU_DATASTORE', 'localhost')
-GLUU_DATASTORE_PORT = os.environ.get('GLUU_DATASTORE_PORT', 8500)
+GLUU_KV_HOST = os.environ.get('GLUU_KV_HOST', 'localhost')
+GLUU_KV_PORT = os.environ.get('GLUU_KV_PORT', 8500)
 #TODO env var acesslog_comentout
 TMPDIR = tempfile.mkdtemp()
 
 
-consul = consulate.Consul(host=GLUU_DATASTORE, port=GLUU_DATASTORE_PORT)
+consul = consulate.Consul(host=GLUU_KV_PORT, port=GLUU_KV_PORT)
 
 
 #START functions taken from setup.py
@@ -78,21 +78,63 @@ def configure_openldap():
 
 
 def render_ldif():
-    # TODO: check ctx data and update accordingly with consul KV
     ctx_data = {
-            "oxauth_client_id": consul.kv.get(''),
-            "oxauth_client_encoded_pw": consul.kv.get(''),
-            "encoded_ldap_pw": consul.kv.get(''),
-            "encoded_ox_ldap_pw": consul.kv.get(''),
-            "inum_appliance": consul.kv.get(''),
-            "hostname": consul.kv.get(''), #self.ldap_failover_hostname() TODO
-            "ox_cluster_hostname": consul.kv.get(''),
-            "ldaps_port": consul.kv.get(''),
-            "ldap_binddn": consul.kv.get(''),
-            "inum_org": consul.kv.get(''),
-            "inum_org_fn": consul.kv.get(''),
-            "org_name": consul.kv.get(''),
-            "scim_rp_client_id": consul.kv.get(''),
+            #o_site.ldif
+            #has no variables
+
+            #appliance.ldif
+            #oxpassport-config.ldif
+            'inumAppliance': consul.kv.get('inumAppliance'),
+            'ldap_hostname': consul.kv.get('ldap_hostname'), #TODO: fix how to get ldap_hostname
+            'ldaps_port': consul.kv.get('ldaps_port'),
+            'ldap_binddn': consul.kv.get('ldap_binddn'),
+            'encoded_ox_ldap_pw': consul.kv.get('encoded_ox_ldap_pw'),
+            'jetty_base': consul.kv.get('jetty_base'),
+
+            #asimba.ldif
+            #attributes.ldif
+            #groups.ldif
+            #oxidp.ldif
+            #scopes.ldif
+            'inumOrg': consul.kv.get('inumOrg'),
+
+            #base.ldif
+            'orgName': consul.kv.get('orgName'),
+
+            #clients.ldif
+            'oxauth_client_id': consul.kv.get('oxauth_client_id'),
+            'oxauthClient_encoded_pw': consul.kv.get('oxauthClient_encoded_pw'),
+            'hostname': consul.kv.get('hostname'),
+
+            #configuration.ldif
+            'oxauth_config_base64': consul.kv.get('oxauth_config_base64'),
+            'oxauth_static_conf_base64': consul.kv.get('oxauth_static_conf_base64'),
+            'oxauth_openid_key_base64': consul.kv.get('oxauth_openid_key_base64'),
+            'oxauth_error_base64': consul.kv.get('oxauth_error_base64'),
+            'oxtrust_config_base64': consul.kv.get('oxtrust_config_base64'),
+            'oxtrust_cache_refresh_base64': consul.kv.get('oxtrust_cache_refresh_base64'),
+            'oxtrust_import_person_base64': consul.kv.get('oxtrust_import_person_base64'),
+            'oxidp_config_base64': consul.kv.get('oxidp_config_base64'),
+            'oxcas_config_base64': consul.kv.get('oxcas_config_base64'),
+            'oxasimba_config_base64': consul.kv.get('oxasimba_config_base64'),
+
+            #passport.ldif
+            'passport_rs_client_id': consul.kv.get('passport_rs_client_id'),
+            'passport_rs_client_base64_jwks': consul.kv.get('passport_rs_client_base64_jwks'),
+            'passport_rp_client_id': consul.kv.get('passport_rp_client_id'),
+            'passport_rp_client_base64_jwks': consul.kv.get('passport_rp_client_base64_jwks'),
+
+            #people.ldif
+            "encoded_ldap_pw": consul.kv.get('encoded_ldap_pw'),
+
+            #scim.ldif
+            'scim_rs_client_id': consul.kv.get('scim_rs_client_id'),
+            'scim_rs_client_base64_jwks': consul.kv.get('scim_rs_client_base64_jwks'),
+            'scim_rp_client_id': consul.kv.get('scim_rp_client_id'),
+            'scim_rp_client_base64_jwks': consul.kv.get('scim_rp_client_base64_jwks'),
+
+            #scripts.ldif
+            #already coverd at this point
         }
 
     ldif_template_base = '/ldap/templates/ldif'
