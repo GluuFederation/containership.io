@@ -159,9 +159,9 @@ def import_ldif():
     config = '/opt/symas/etc/openldap/slapd.conf'
     for ldif_file_path in glob.glob(TMPDIR+pattern):
         if 'site.ldif' in ldif_file_path:
-            run([" ".join([slapadd_cmd, '-b', 'o=site', '-f', config, '-l', ldif_file_path])])
+            runcmd([slapadd_cmd, '-b', 'o=site', '-f', config, '-l', ldif_file_path])
         else:
-            run([" ".join([slapadd_cmd, '-b', 'o=gluu', '-f', config, '-l', ldif_file_path])])
+            runcmd([slapadd_cmd, '-b', 'o=gluu', '-f', config, '-l', ldif_file_path])
 
 
 def cleanup():
