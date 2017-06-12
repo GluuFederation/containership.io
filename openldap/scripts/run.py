@@ -100,7 +100,7 @@ def render_ldif():
         # groups.ldif
         # oxidp.ldif
         # scopes.ldif
-        'inumOrg': consul.kv.get('inumOrg'),
+        'inumOrg': r"{}".format(consul.kv.get('inumOrg')),  # raw string
 
         # base.ldif
         'orgName': consul.kv.get('orgName'),
