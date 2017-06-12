@@ -172,8 +172,8 @@ def generate_config(admin_pw, email, domain, org_name, ssl_cert, ssl_key):
     # ====
     # LDAP
     # ====
-    cfg["ldap_hostname"] = "N/A"
-    cfg["ldapPassFn"] = "N/A"
+    cfg["ldap_hostname"] = ""
+    cfg["ldapPassFn"] = ""
     cfg["ldap_port"] = 1389
     cfg["ldap_admin_port"] = 4444  # for OpenDJ
     cfg["ldap_jmx_port"] = 1689  # for OpenDJ
