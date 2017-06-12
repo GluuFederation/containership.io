@@ -184,6 +184,7 @@ def generate_config(admin_pw, email, domain, org_name, ssl_cert, ssl_key):
     cfg["ldap_site_binddn"] = "cn=directory manager,o=site"
     cfg["encoded_ldap_pw"] = ldap_encode(admin_pw)
     cfg["encoded_ox_ldap_pw"] = encrypt_text(admin_pw, cfg["encoded_salt"])
+    cfg["ldap_use_ssl"] = False
 
     # ====
     # Inum
