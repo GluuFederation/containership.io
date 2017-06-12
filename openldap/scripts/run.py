@@ -14,7 +14,7 @@ GLUU_KV_PORT = os.environ.get('GLUU_KV_PORT', 8500)
 TMPDIR = tempfile.mkdtemp()
 
 
-consul = consulate.Consul(host=GLUU_KV_PORT, port=GLUU_KV_PORT)
+consul = consulate.Consul(host=GLUU_KV_HOST, port=GLUU_KV_PORT)
 
 
 #START functions taken from setup.py
