@@ -98,7 +98,7 @@ def render_ldif():
         'ldap_hostname': consul.kv.get('ldap_hostname'),
         # TODO: currently using std ldaps port 1636 as ldap port.
         # after basic testing we need to do it right, and remove this hack.
-        # to do this properly we need to update all templates. 
+        # to do this properly we need to update all templates.
         'ldaps_port': consul.kv.get('ldap_port'),
         'ldap_binddn': consul.kv.get('ldap_binddn'),
         'encoded_ox_ldap_pw': consul.kv.get('encoded_ox_ldap_pw'),
@@ -197,6 +197,7 @@ def cleanup():
 
 
 def run():
+    set_kv()
     configure_openldap()
     render_ldif()
     import_ldif()
