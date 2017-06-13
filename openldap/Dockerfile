@@ -60,6 +60,10 @@ RUN pip install --no-cache-dir -r ./scripts/requirements.txt
 RUN mkdir -p /opt/gluu/data/main_db
 RUN mkdir -p /opt/gluu/data/site_db
 
+# Volumes
+VOLUME /opt/gluu/data/main_db
+VOLUME /opt/gluu/data/site_db
+
 # TODO: currently using port 1636 but will change to 1389
 EXPOSE 1636
 #EXPOSE 1389
