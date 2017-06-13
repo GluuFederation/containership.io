@@ -172,7 +172,7 @@ def generate_config(admin_pw, email, domain, org_name, ssl_cert, ssl_key):
     # ====
     # LDAP
     # ====
-    cfg["ldap_hostname"] = ""
+    cfg["ldap_hostname"] = ""  # need to be populated from somewhere else
     cfg["ldapPassFn"] = ""
     cfg["ldap_port"] = 1389
     cfg["ldap_admin_port"] = 4444  # for OpenDJ
@@ -402,8 +402,6 @@ def main(admin_pw, email, domain, org_name, kv_host, kv_port,
     if save:
         consul = consulate.Consul(host=kv_host, port=kv_port)
         for k, v in cfg.iteritems():
-            if k in consul.kv:
-                continue
             consul.kv.set(k, v)
 
     if view:
