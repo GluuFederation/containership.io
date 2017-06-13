@@ -1,5 +1,13 @@
 server_tokens off;
 
+upstream oxauth_backend {
+    server %(gluu_oxauth_backend)s fail_timeout=10s;
+}
+
+upstream oxtrust_backend {
+    server %(gluu_oxtrust_backend)s fail_timeout=10s;
+}
+
 server {
     listen 80 default_server;
     listen [::]:80 default_server ipv6only=on;
@@ -40,7 +48,7 @@ server {
     }
 
     location /.well-known/openid-configuration {
-        proxy_pass http://%(gluu_oxauth_backend)s/oxauth/.well-known/openid-configuration;
+        proxy_pass http://oxauth_backend/oxauth/.well-known/openid-configuration;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-Host $host:$server_port;
@@ -50,7 +58,7 @@ server {
     }
 
     location /.well-known/simple-web-discovery {
-        proxy_pass http://%(gluu_oxauth_backend)s/oxauth/.well-known/simple-web-discovery;
+        proxy_pass http://oxauth_backend/oxauth/.well-known/simple-web-discovery;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-Host $host:$server_port;
@@ -60,7 +68,7 @@ server {
     }
 
     location /.well-known/webfinger {
-        proxy_pass http://%(gluu_oxauth_backend)s/oxauth/.well-known/webfinger;
+        proxy_pass http://oxauth_backend/oxauth/.well-known/webfinger;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-Host $host:$server_port;
@@ -70,7 +78,7 @@ server {
     }
 
     location /.well-known/uma-configuration {
-        proxy_pass http://%(gluu_oxauth_backend)s/oxauth/seam/resource/restv1/oxauth/uma-configuration;
+        proxy_pass http://oxauth_backend/oxauth/seam/resource/restv1/oxauth/uma-configuration;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-Host $host:$server_port;
@@ -80,7 +88,7 @@ server {
     }
 
     location /.well-known/fido-u2f-configuration {
-        proxy_pass http://%(gluu_oxauth_backend)s/oxauth/seam/resource/restv1/oxauth/fido-u2f-configuration;
+        proxy_pass http://oxauth_backend/oxauth/seam/resource/restv1/oxauth/fido-u2f-configuration;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-Host $host:$server_port;
@@ -90,7 +98,7 @@ server {
     }
 
     location /identity {
-        proxy_pass http://%(gluu_oxtrust_backend)s;
+        proxy_pass http://oxtrust_backend;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-Host $host:$server_port;
@@ -99,7 +107,7 @@ server {
         proxy_redirect off;
     }
     location /.well-known/scim-configuration {
-        proxy_pass http://%(gluu_oxtrust_backend)s/identity/seam/resource/restv1/oxtrust/scim-configuration;
+        proxy_pass http://oxtrust_backend/identity/seam/resource/restv1/oxtrust/scim-configuration;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-Host $host:$server_port;
