@@ -87,6 +87,7 @@ def render_ldif():
         # has no variables
 
         # appliance.ldif
+        'ldap_use_ssl': consul.kv.get('ldap_use_ssl'),
         # oxpassport-config.ldif
         'inumAppliance': consul.kv.get('inumAppliance'),
         # TODO: fix how to get ldap_hostname
