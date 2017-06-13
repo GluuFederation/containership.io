@@ -5,13 +5,13 @@ import glob
 import tempfile
 import shutil
 import traceback
-import socket
 
 import consulate
 
 
 GLUU_KV_HOST = os.environ.get('GLUU_KV_HOST', 'localhost')
 GLUU_KV_PORT = os.environ.get('GLUU_KV_PORT', 8500)
+GLUU_LDAP_HOSTNAME = os.environ.get('GLUU_LDAP_HOSTNAME', 'localhost')
 # TODO env var acesslog_comentout
 TMPDIR = tempfile.mkdtemp()
 
@@ -50,6 +50,10 @@ def runcmd(args, cwd=None, env=None, useWait=False):
         print "Error running command : %s" % " ".join(args)
         print traceback.format_exc()
 # END functions taken from setup.py
+
+
+def set_kv():
+    consul.kv.set('ldap_hostname', GLUU_LDAP_HOSTNAME)
 
 
 def configure_openldap():
@@ -91,7 +95,7 @@ def render_ldif():
         # oxpassport-config.ldif
         'inumAppliance': consul.kv.get('inumAppliance'),
         # TODO: fix how to get ldap_hostname
-        'ldap_hostname': consul.kv.get('ldap_hostname', socket.gethostname()),
+        'ldap_hostname': consul.kv.get('ldap_hostname'),
         # TODO: currently using std ldaps port 1636 as ldap port.
         # after basic testing we need to do it right, and remove this hack.
         # to do this properly we need to update all templates. 
