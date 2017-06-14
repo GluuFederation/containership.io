@@ -196,10 +196,71 @@ def cleanup():
     shutil.rmtree(TMPDIR)
 
 
+# TODO: Remove oxtrust related code from openldap
+# oxtrust start
+def reindent(text, num_spaces=1):
+    text = [(num_spaces * " ") + line.lstrip() for line in text.splitlines()]
+    text = "\n".join(text)
+    return text
+
+
+def generate_base64_contents(text, num_spaces=1):
+    text = text.encode("base64").strip()
+    if num_spaces > 0:
+        text = reindent(text, num_spaces)
+    return text
+
+
+def oxtrust_config():
+    # keeping redundent data in context of ldif ctx_data dict for now.
+    # so that we can easily remove it from here
+    ctx = {
+        'inumOrg': r"{}".format(consul.kv.get('inumOrg')),  # raw string
+        'admin_email': consul.kv.get('admin_email'),
+        'inumAppliance': consul.kv.get('inumAppliance'),
+        'hostname': consul.kv.get('hostname'),
+        'shibJksFn': consul.kv.get('shibJksFn'),
+        'shibJksPass': consul.kv.get('shibJksPass'),
+        'jetty_base': consul.kv.get('jetty_base'),
+        'oxTrustConfigGeneration': consul.kv.get('oxTrustConfigGeneration'),
+        'encoded_shib_jks_pw': consul.kv.get('encoded_shib_jks_pw'),
+        'oxauth_client_id': consul.kv.get('oxauth_client_id'),
+        'oxauthClient_encoded_pw': consul.kv.get('oxauthClient_encoded_pw'),
+        'scim_rs_client_id': consul.kv.get('scim_rs_client_id'),
+        'scim_rs_client_jks_fn': consul.kv.get('scim_rs_client_jks_fn'),
+        'scim_rs_client_jks_pass_encoded': consul.kv.get('scim_rs_client_jks_pass_encoded'),
+        'passport_rs_client_id': consul.kv.get('passport_rs_client_id'),
+        'passport_rs_client_jks_fn': consul.kv.get('passport_rs_client_jks_fn'),
+        'passport_rs_client_jks_pass_encoded': consul.kv.get('passport_rs_client_jks_pass_encoded'),
+        'shibboleth_version': consul.kv.get('shibboleth_version'),
+        'idp3Folder': consul.kv.get('idp3Folder'),
+        'orgName': consul.kv.get('orgName'),
+        'ldap_site_binddn': consul.kv.get('ldap_site_binddn'),
+        'encoded_ox_ldap_pw': consul.kv.get('encoded_ox_ldap_pw'),
+        'ldap_hostname': consul.kv.get('ldap_hostname'),
+        'ldaps_port': consul.kv.get('ldaps_port'),
+    }
+
+    oxtrust_template_base = '/ldap/templates/oxtrust'
+
+    key_and_jsonfile_map = {
+        'oxtrust_cache_refresh_base64': 'oxtrust-cache-refresh.json',
+        'oxtrust_config_base64': 'oxtrust-config.json',
+        'oxtrust_import_person_base64': 'oxtrust-import-person.json'
+    }
+
+    for key, json_file in key_and_jsonfile_map.iteritems():
+        json_file_path = os.path.join(oxtrust_template_base, json_file)
+        with open(json_file_path, 'r') as fp:
+            consul.kv.set(key, generate_base64_contents(fp.read() % ctx))
+# oxtrust end
+
+
 def run():
     set_kv()
     configure_openldap()
     render_ldif()
+    oxtrust_config()
     import_ldif()
     cleanup()
 
