@@ -160,7 +160,6 @@ def generate_config(admin_pw, email, domain, org_name, ssl_cert, ssl_key):
 
     cfg["shibJksFn"] = "/etc/certs/shibIDP.jks"
     cfg["shibJksPass"] = get_random_chars()
-    cfg["oxTrustConfigGeneration"] = "false"
 
     cfg["encoded_shib_jks_pw"] = encrypt_text(
         cfg["shibJksPass"], cfg["encoded_salt"])
@@ -312,13 +311,14 @@ def generate_config(admin_pw, email, domain, org_name, ssl_cert, ssl_key):
     # =======
     # oxTrust
     # =======
-    cfg["oxtrust_config_base64"] = encode_template("oxtrust-config.json", cfg)
+    # cfg["oxTrustConfigGeneration"] = "false"
+    # cfg["oxtrust_config_base64"] = encode_template("oxtrust-config.json", cfg)
 
-    cfg["oxtrust_cache_refresh_base64"] = encode_template(
-        "oxtrust-cache-refresh.json", cfg)
+    # cfg["oxtrust_cache_refresh_base64"] = encode_template(
+    #     "oxtrust-cache-refresh.json", cfg)
 
-    cfg["oxtrust_import_person_base64"] = encode_template(
-        "oxtrust-import-person.json", cfg)
+    # cfg["oxtrust_import_person_base64"] = encode_template(
+    #     "oxtrust-import-person.json", cfg)
 
     # =====
     # oxIDP
