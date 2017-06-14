@@ -9,7 +9,7 @@
             "%(ldap_hostname)s:%(ldaps_port)s"
         ],
         "maxConnections":10,
-        "useSSL":true,
+        "useSSL":false,
         "baseDNs":[
             "o=site"
         ],

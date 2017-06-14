@@ -259,8 +259,8 @@ def oxtrust_config():
 def run():
     set_kv()
     configure_openldap()
-    render_ldif()
     oxtrust_config()
+    render_ldif()
     import_ldif()
     cleanup()
 
