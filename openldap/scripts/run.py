@@ -54,6 +54,7 @@ def runcmd(args, cwd=None, env=None, useWait=False):
 
 def set_kv():
     consul.kv.set('ldap_hostname', GLUU_LDAP_HOSTNAME)
+    consul.kv.set("oxTrustConfigGeneration", False)
 
 
 def configure_openldap():
