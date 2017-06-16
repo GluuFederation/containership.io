@@ -107,7 +107,6 @@ COPY jetty/identity_web_resources.xml ${JETTY_BASE}/identity/webapps/
 COPY conf/oxTrustLogRotationConfiguration.xml /etc/gluu/conf/
 COPY conf/ox-ldap.properties.tmpl /opt/templates/
 COPY conf/salt.tmpl /opt/templates/
-COPY conf/oxTrustLogRotationConfiguration.xml /etc/gluu/conf/
 
 # Set openjdk 8 as default java
 RUN cd /usr/lib/jvm && ln -s java-1.8.0-openjdk-amd64 default-java
