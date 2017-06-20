@@ -184,6 +184,10 @@ def generate_config(admin_pw, email, domain, org_name, ssl_cert, ssl_key):
     cfg["encoded_ldap_pw"] = ldap_encode(admin_pw)
     cfg["encoded_ox_ldap_pw"] = encrypt_text(admin_pw, cfg["encoded_salt"])
     cfg["ldap_use_ssl"] = False
+    cfg["replication_cn"] = "replicator"
+    cfg["replication_dn"] = "cn={},o=gluu".format(cfg["replication_cn"])
+    cfg["encoded_replication_pw"] = cfg["encoded_ldap_pw"]
+    cfg["encoded_ox_replication_pw"] = cfg["encoded_ox_ldap_pw"]
 
     # ====
     # Inum
