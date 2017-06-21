@@ -5,8 +5,10 @@ import glob
 import tempfile
 import shutil
 import traceback
+import base64
 
 import consulate
+from M2Crypto.EVP import Cipher
 
 
 GLUU_KV_HOST = os.environ.get('GLUU_KV_HOST', 'localhost')
@@ -94,7 +96,8 @@ def configure_consumer_openldap():
         'pprotocol': 'ldap',
         'phost': GLUU_LDAP_REPLICATE_FROM,
         'pport': 1389,
-        'r_pw': 'passpass',  # TODO: this is hard coded, add decrypt_text(en_txt, key) how to get key?
+        # 'r_pw': 'passpass',  # TODO: this is hard coded, add decrypt_text(en_txt, key) how to get key?
+        'r_pw': decrypt_text(consul.kv.get("encoded_ox_replication_pw"), consul.kv.get("encoded_salt")),
         'server_id': nid,
     }
 
@@ -314,6 +317,20 @@ def run():
         cleanup()
     else:
         configure_consumer_openldap()
+
+
+def decrypt_text(encrypted_text, key):
+    # Porting from pyDes-based encryption (see http://git.io/htpk)
+    # to use M2Crypto instead (see https://gist.github.com/mrluanma/917014)
+    cipher = Cipher(alg="des_ede3_ecb",
+                    key=b"{}".format(key),
+                    op=0,
+                    iv="\0" * 16)
+    decrypted_text = cipher.update(base64.b64decode(
+        b"{}".format(encrypted_text)
+    ))
+    decrypted_text += cipher.final()
+    return decrypted_text
 
 
 if __name__ == '__main__':

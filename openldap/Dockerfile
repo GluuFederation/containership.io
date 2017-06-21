@@ -10,7 +10,10 @@ RUN apt-get update && apt-get install -y \
     wget \
     curl \
     python \
+    python-dev \
     python-pip \
+    swig \
+    libssl-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -42,20 +45,23 @@ RUN mkdir -p /var/symas/run
 
 WORKDIR /ldap
 
+COPY requirements.txt ./
+
+# Install requirements
+RUN pip install --no-cache-dir -r ./requirements.txt
+
 #configure_openldap
 RUN mkdir -p /opt/symas/etc/openldap
 RUN mkdir -p /opt/gluu/schema/openldap
 RUN mkdir -p /opt/gluu/data/accesslog
 RUN mkdir -p /etc/cert
+RUN mkdir -p /opt/symas/etc/openldap/slapd.d
 
 COPY schema /opt/gluu/schema/openldap
 COPY templates ./templates
 COPY static ./static
 COPY scripts ./scripts
 #RUN cp ./templates/slapd/symas-openldap.conf /opt/symas/etc/openldap/symas-openldap.conf
-
-# Install requirements
-RUN pip install --no-cache-dir -r ./scripts/requirements.txt
 
 # Data dir
 RUN mkdir -p /opt/gluu/data/main_db
