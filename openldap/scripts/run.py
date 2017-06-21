@@ -5,8 +5,6 @@ import glob
 import tempfile
 import shutil
 import traceback
-import random
-import json
 
 import consulate
 
@@ -58,6 +56,7 @@ def runcmd(args, cwd=None, env=None, useWait=False):
 def set_kv():
     consul.kv.set('ldap_hostname', GLUU_LDAP_HOSTNAME)
     consul.kv.set("oxTrustConfigGeneration", False)
+    consul.kv.set('ctid', '0')
 
 
 def configure_provider_openldap():
@@ -103,25 +102,8 @@ def configure_consumer_openldap():
         fp.write(fomatWithDict(slapd_template, ctx_data))
 
 
-# this does not work, apparently we need continuas ids
-# def get_id():
-#     # get list of used ids form kv
-#     id_list = json.loads(consul.kv.get('used_ids', '[]'))
-#     # make new id
-#     random.seed()
-#     while True:
-#         nid = random.randint(0, 9)
-#         if nid not in id_list:
-#             break
-#     # update list
-#     id_list.append(nid)
-#     # update KV
-#     consul.kv.set('used_ids', id_list)
-#     return nid
-
-
 def get_id():
-    ctid = json.loads(consul.kv.get('ctid', '0'))
+    ctid = consul.kv.get('ctid', '0')
     ctid = int(ctid)
     consul.kv.set('ctid', ctid + 1)
     return ctid
