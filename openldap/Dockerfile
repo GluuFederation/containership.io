@@ -45,13 +45,14 @@ WORKDIR /ldap
 #configure_openldap
 RUN mkdir -p /opt/symas/etc/openldap
 RUN mkdir -p /opt/gluu/schema/openldap
+RUN mkdir -p /opt/gluu/data/accesslog
 RUN mkdir -p /etc/cert
 
 COPY schema /opt/gluu/schema/openldap
 COPY templates ./templates
 COPY static ./static
 COPY scripts ./scripts
-RUN cp ./templates/symas-openldap.conf /opt/symas/etc/openldap/symas-openldap.conf
+#RUN cp ./templates/slapd/symas-openldap.conf /opt/symas/etc/openldap/symas-openldap.conf
 
 # Install requirements
 RUN pip install --no-cache-dir -r ./scripts/requirements.txt

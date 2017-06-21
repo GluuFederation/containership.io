@@ -1,0 +1,6 @@
+dn: %(replication_dn)s
+#changetype: add
+objectClass: person
+cn: %(replication_cn)s
+sn: gluu
+userPassword:%(encoded_replication_pw)s

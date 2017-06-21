@@ -5,6 +5,8 @@ import glob
 import tempfile
 import shutil
 import traceback
+import random
+import json
 
 import consulate
 
@@ -12,7 +14,8 @@ import consulate
 GLUU_KV_HOST = os.environ.get('GLUU_KV_HOST', 'localhost')
 GLUU_KV_PORT = os.environ.get('GLUU_KV_PORT', 8500)
 GLUU_LDAP_HOSTNAME = os.environ.get('GLUU_LDAP_HOSTNAME', 'localhost')
-# TODO env var acesslog_comentout
+# Location of provider (ip) if not set then we set it to False
+GLUU_LDAP_REPLICATE_FROM = os.environ.get('GLUU_LDAP_REPLICATE_FROM', False)
 TMPDIR = tempfile.mkdtemp()
 
 
@@ -57,33 +60,95 @@ def set_kv():
     consul.kv.set("oxTrustConfigGeneration", False)
 
 
-def configure_openldap():
-    src = '/ldap/templates/slapd.conf'
+def configure_provider_openldap():
+    src = '/ldap/templates/slapd/provider.conf'
     dest = '/opt/symas/etc/openldap/slapd.conf'
-    accesslog_file = '/ldap/static/accesslog.conf'
-    gluu_accesslog_file = '/ldap/static/o_gluu_accesslog.conf'
 
     with open(src, 'r') as fp:
         slapd_template = fp.read()
 
-    with open(accesslog_file, 'r') as fp:
-        access_log_text = fp.read()
-
-    with open(gluu_accesslog_file, 'r') as fp:
-        gluu_accesslog_text = fp.read()
-
+    nid = get_id()
     ctx_data = {
         'openldapSchemaFolder': '/opt/gluu/schema/openldap',
-        'openldapTLSCACert': '',
-        'openldapTLSCert': '',
-        'openldapTLSKey': '',
         'encoded_ldap_pw': consul.kv.get('encoded_ldap_pw'),
-        'openldap_accesslog_conf': commentOutText(access_log_text),
-        'openldap_gluu_accesslog': commentOutText(gluu_accesslog_text),
+        'replication_dn': consul.kv.get('replication_dn'),
+        'server_id': nid,
     }
 
     with open(dest, 'w') as fp:
         fp.write(fomatWithDict(slapd_template, ctx_data))
+
+
+def configure_consumer_openldap():
+    src = '/ldap/templates/slapd/consumer.conf'
+    dest = '/opt/symas/etc/openldap/slapd.conf'
+
+    with open(src, 'r') as fp:
+        slapd_template = fp.read()
+
+    nid = get_id()
+    ctx_data = {
+        'openldapSchemaFolder': '/opt/gluu/schema/openldap',
+        'encoded_ldap_pw': consul.kv.get('encoded_ldap_pw'),
+        'replication_dn': consul.kv.get('replication_dn'),
+        'r_id': nid,  # TODO: in consumer ldap, is server_id and r_id need to be same?
+        'pprotocol': 'ldap',
+        'phost': GLUU_LDAP_REPLICATE_FROM,
+        'pport': 1389,
+        'r_pw': 'passpass',  # TODO: this is hard coded, add decrypt_text(en_txt, key) how to get key?
+        'server_id': nid,
+    }
+
+    with open(dest, 'w') as fp:
+        fp.write(fomatWithDict(slapd_template, ctx_data))
+
+
+# this does not work, apparently we need continuas ids
+# def get_id():
+#     # get list of used ids form kv
+#     id_list = json.loads(consul.kv.get('used_ids', '[]'))
+#     # make new id
+#     random.seed()
+#     while True:
+#         nid = random.randint(0, 9)
+#         if nid not in id_list:
+#             break
+#     # update list
+#     id_list.append(nid)
+#     # update KV
+#     consul.kv.set('used_ids', id_list)
+#     return nid
+
+
+def get_id():
+    ctid = json.loads(consul.kv.get('ctid', '0'))
+    ctid = int(ctid)
+    consul.kv.set('ctid', ctid + 1)
+    return ctid
+
+
+def add_replication_user():
+    # render rep_user.ldif in tmp
+    src = '/ldap/templates/slapd/rep_user.ldif'
+    dest = os.path.join(TMPDIR, os.path.basename(src))
+
+    ctx_data = {
+        'replication_dn': consul.kv.get('replication_dn'),
+        'replication_cn': consul.kv.get('replication_cn'),
+        'encoded_replication_pw': consul.kv.get('encoded_replication_pw'),
+    }
+
+    with open(src, 'r') as fp:
+        template = fp.read()
+
+    with open(dest, 'w') as fp:
+        fp.write(template % ctx_data)
+
+    # add it in ldap
+    slapadd_cmd = '/opt/symas/bin/slapadd'
+    config = '/opt/symas/etc/openldap/slapd.conf'
+
+    runcmd([slapadd_cmd, '-b', 'o=gluu', '-f', config, '-l', dest])
 
 
 def render_ldif():
@@ -95,7 +160,6 @@ def render_ldif():
         'ldap_use_ssl': consul.kv.get('ldap_use_ssl'),
         # oxpassport-config.ldif
         'inumAppliance': consul.kv.get('inumAppliance'),
-        # TODO: fix how to get ldap_hostname
         'ldap_hostname': consul.kv.get('ldap_hostname'),
         # TODO: currently using std ldaps port 1636 as ldap port.
         # after basic testing we need to do it right, and remove this hack.
@@ -258,12 +322,16 @@ def oxtrust_config():
 
 
 def run():
-    set_kv()
-    configure_openldap()
-    oxtrust_config()
-    render_ldif()
-    import_ldif()
-    cleanup()
+    if not GLUU_LDAP_REPLICATE_FROM:
+        set_kv()
+        configure_provider_openldap()
+        oxtrust_config()
+        render_ldif()
+        import_ldif()
+        add_replication_user()
+        cleanup()
+    else:
+        configure_consumer_openldap()
 
 
 if __name__ == '__main__':
