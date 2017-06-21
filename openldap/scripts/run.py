@@ -1,5 +1,4 @@
 import os
-import re
 import subprocess
 import glob
 import tempfile
@@ -22,20 +21,6 @@ consul = consulate.Consul(host=GLUU_KV_HOST, port=GLUU_KV_PORT)
 
 
 # START functions taken from setup.py
-def fomatWithDict(text, dictionary):
-    text = re.sub(r"%([^\(])", r"%%\1", text)
-    text = re.sub(r"%$", r"%%", text)  # There was a % at the end?
-    return text % dictionary
-
-
-def commentOutText(text):
-    textLines = text.split('\n')
-    lines = []
-    for textLine in textLines:
-        lines.append('#%s' % textLine)
-    return "\n".join(lines)
-
-
 def runcmd(args, cwd=None, env=None, useWait=False):
     try:
         p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, env=env)
@@ -64,9 +49,6 @@ def configure_provider_openldap():
     src = '/ldap/templates/slapd/provider.conf'
     dest = '/opt/symas/etc/openldap/slapd.conf'
 
-    with open(src, 'r') as fp:
-        slapd_template = fp.read()
-
     nid = get_id()
     ctx_data = {
         'openldapSchemaFolder': '/opt/gluu/schema/openldap',
@@ -75,16 +57,16 @@ def configure_provider_openldap():
         'server_id': nid,
     }
 
+    with open(src, 'r') as fp:
+        slapd_template = fp.read()
+
     with open(dest, 'w') as fp:
-        fp.write(fomatWithDict(slapd_template, ctx_data))
+        fp.write(slapd_template % ctx_data)
 
 
 def configure_consumer_openldap():
     src = '/ldap/templates/slapd/consumer.conf'
     dest = '/opt/symas/etc/openldap/slapd.conf'
-
-    with open(src, 'r') as fp:
-        slapd_template = fp.read()
 
     nid = get_id()
     ctx_data = {
@@ -98,8 +80,11 @@ def configure_consumer_openldap():
         'server_id': nid,
     }
 
+    with open(src, 'r') as fp:
+        slapd_template = fp.read()
+
     with open(dest, 'w') as fp:
-        fp.write(fomatWithDict(slapd_template, ctx_data))
+        fp.write(slapd_template % ctx_data)
 
 
 def get_id():
