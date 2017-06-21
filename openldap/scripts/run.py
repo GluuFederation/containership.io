@@ -14,10 +14,9 @@ from M2Crypto.EVP import Cipher
 GLUU_KV_HOST = os.environ.get('GLUU_KV_HOST', 'localhost')
 GLUU_KV_PORT = os.environ.get('GLUU_KV_PORT', 8500)
 GLUU_LDAP_HOSTNAME = os.environ.get('GLUU_LDAP_HOSTNAME', 'localhost')
-# Location of provider (ip) if not set then we set it to False
-GLUU_LDAP_REPLICATE_FROM = os.environ.get('GLUU_LDAP_REPLICATE_FROM', False)
+# Location of provider's host/ip and port, i.e. ldap1.domain.com:1389
+GLUU_LDAP_REPLICATE_FROM = os.environ.get('GLUU_LDAP_REPLICATE_FROM', "")
 TMPDIR = tempfile.mkdtemp()
-
 
 consul = consulate.Consul(host=GLUU_KV_HOST, port=GLUU_KV_PORT)
 
@@ -92,11 +91,9 @@ def configure_consumer_openldap():
         'openldapSchemaFolder': '/opt/gluu/schema/openldap',
         'encoded_ldap_pw': consul.kv.get('encoded_ldap_pw'),
         'replication_dn': consul.kv.get('replication_dn'),
-        'r_id': nid,  # TODO: in consumer ldap, is server_id and r_id need to be same?
-        'pprotocol': 'ldap',
-        'phost': GLUU_LDAP_REPLICATE_FROM,
-        'pport': 1389,
-        # 'r_pw': 'passpass',  # TODO: this is hard coded, add decrypt_text(en_txt, key) how to get key?
+        'replication_id': nid,  # TODO: in consumer ldap, is server_id and r_id need to be same?
+        'protocol': 'ldap',
+        'replicate_from': GLUU_LDAP_REPLICATE_FROM,
         'r_pw': decrypt_text(consul.kv.get("encoded_ox_replication_pw"), consul.kv.get("encoded_salt")),
         'server_id': nid,
     }
@@ -202,7 +199,7 @@ def render_ldif():
 
     ldif_template_base = '/ldap/templates/ldif'
     pattern = '/*.ldif'
-    for file_path in glob.glob(ldif_template_base+pattern):
+    for file_path in glob.glob(ldif_template_base + pattern):
         with open(file_path, 'r') as fp:
             template = fp.read()
         # render
@@ -214,22 +211,22 @@ def render_ldif():
 
 def import_ldif():
     ldif_import_order = [
-                        'base.ldif',
-                        'appliance.ldif',
-                        'attributes.ldif',
-                        'scopes.ldif',
-                        'clients.ldif',
-                        'people.ldif',
-                        'groups.ldif',
-                        'o_site.ldif',
-                        'scripts.ldif',
-                        'configuration.ldif',
-                        'scim.ldif',
-                        'asimba.ldif',
-                        'passport.ldif',
-                        'oxpassport-config.ldif',
-                        'oxidp.ldif'
-                    ]
+        'base.ldif',
+        'appliance.ldif',
+        'attributes.ldif',
+        'scopes.ldif',
+        'clients.ldif',
+        'people.ldif',
+        'groups.ldif',
+        'o_site.ldif',
+        'scripts.ldif',
+        'configuration.ldif',
+        'scim.ldif',
+        'asimba.ldif',
+        'passport.ldif',
+        'oxpassport-config.ldif',
+        'oxidp.ldif'
+    ]
 
     slapadd_cmd = '/opt/symas/bin/slapadd'
     config = '/opt/symas/etc/openldap/slapd.conf'
