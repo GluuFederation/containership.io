@@ -1,10 +1,13 @@
-import os
-import subprocess
-import glob
-import tempfile
-import shutil
-import traceback
 import base64
+import fcntl
+import glob
+import os
+import shutil
+import socket
+import struct
+import subprocess
+import traceback
+import tempfile
 
 import consulate
 from M2Crypto.EVP import Cipher
@@ -13,14 +16,48 @@ from M2Crypto.EVP import Cipher
 GLUU_KV_HOST = os.environ.get('GLUU_KV_HOST', 'localhost')
 GLUU_KV_PORT = os.environ.get('GLUU_KV_PORT', 8500)
 GLUU_LDAP_HOSTNAME = os.environ.get('GLUU_LDAP_HOSTNAME', 'localhost')
-# Location of provider's host/ip and port, i.e. ldap1.domain.com:1389
-GLUU_LDAP_REPLICATE_FROM = os.environ.get('GLUU_LDAP_REPLICATE_FROM', "")
+# Whether initial data should be inserted
+GLUU_LDAP_INIT_DATA = os.environ.get("GLUU_LDAP_INIT_DATA", True)
 TMPDIR = tempfile.mkdtemp()
 
 consul = consulate.Consul(host=GLUU_KV_HOST, port=GLUU_KV_PORT)
 
 
-# START functions taken from setup.py
+def as_boolean(val, default=False):
+    truthy = set(('t', 'T', 'true', 'True', 'TRUE', '1', 1, True))
+    falsy = set(('f', 'F', 'false', 'False', 'FALSE', '0', 0, False))
+
+    if val in truthy:
+        return True
+    if val in falsy:
+        return False
+    return default
+
+
+def get_ip_addr(ifname):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    addr = socket.inet_ntoa(fcntl.ioctl(
+        sock.fileno(),
+        0x8915,  # SIOCGIFADDR
+        struct.pack('256s', ifname[:15])
+    )[20:24])
+    return addr
+
+
+def guess_ip_addr():
+    addr = ""
+
+    # priorities
+    for ifname in ("eth1", "eth0", "wlan0"):
+        try:
+            addr = get_ip_addr(ifname)
+        except IOError:
+            continue
+        else:
+            break
+    return addr
+
+
 def runcmd(args, cwd=None, env=None, useWait=False):
     try:
         p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, env=env)
@@ -36,25 +73,18 @@ def runcmd(args, cwd=None, env=None, useWait=False):
     except:
         print "Error running command : %s" % " ".join(args)
         print traceback.format_exc()
-# END functions taken from setup.py
-
-
-def set_kv():
-    consul.kv.set('ldap_hostname', GLUU_LDAP_HOSTNAME)
-    consul.kv.set("oxTrustConfigGeneration", False)
-    consul.kv.set('ctid', '0')
 
 
 def configure_provider_openldap():
     src = '/ldap/templates/slapd/provider.conf'
     dest = '/opt/symas/etc/openldap/slapd.conf'
 
-    nid = get_id()
+    # nid = get_id()
     ctx_data = {
         'openldapSchemaFolder': '/opt/gluu/schema/openldap',
         'encoded_ldap_pw': consul.kv.get('encoded_ldap_pw'),
         'replication_dn': consul.kv.get('replication_dn'),
-        'server_id': nid,
+        # 'server_id': nid,
     }
 
     with open(src, 'r') as fp:
@@ -63,62 +93,24 @@ def configure_provider_openldap():
     with open(dest, 'w') as fp:
         fp.write(slapd_template % ctx_data)
 
-
-def configure_consumer_openldap():
-    src = '/ldap/templates/slapd/consumer.conf'
-    dest = '/opt/symas/etc/openldap/slapd.conf'
-
-    nid = get_id()
-    ctx_data = {
-        'openldapSchemaFolder': '/opt/gluu/schema/openldap',
-        'encoded_ldap_pw': consul.kv.get('encoded_ldap_pw'),
-        'replication_dn': consul.kv.get('replication_dn'),
-        'replication_id': nid,  # TODO: in consumer ldap, is server_id and r_id need to be same?
-        'protocol': 'ldap',
-        'replicate_from': GLUU_LDAP_REPLICATE_FROM,
-        'r_pw': decrypt_text(consul.kv.get("encoded_ox_replication_pw"), consul.kv.get("encoded_salt")),
-        'server_id': nid,
-    }
-
-    with open(src, 'r') as fp:
-        slapd_template = fp.read()
-
-    with open(dest, 'w') as fp:
-        fp.write(slapd_template % ctx_data)
+    # register master
+    host = guess_ip_addr()
+    port = consul.kv.get("ldap_port")
+    consul.kv.set("ldap_masters/{}:{}".format(host, port), {
+        "host": host, "port": port,
+    })
 
 
 def get_id():
-    ctid = consul.kv.get('ctid', '0')
+    ctid = consul.kv.get('ctid') or 0
     ctid = int(ctid)
     consul.kv.set('ctid', ctid + 1)
     return ctid
 
 
-def add_replication_user():
-    # render rep_user.ldif in tmp
-    src = '/ldap/templates/slapd/rep_user.ldif'
-    dest = os.path.join(TMPDIR, os.path.basename(src))
-
-    ctx_data = {
-        'replication_dn': consul.kv.get('replication_dn'),
-        'replication_cn': consul.kv.get('replication_cn'),
-        'encoded_replication_pw': consul.kv.get('encoded_replication_pw'),
-    }
-
-    with open(src, 'r') as fp:
-        template = fp.read()
-
-    with open(dest, 'w') as fp:
-        fp.write(template % ctx_data)
-
-    # add it in ldap
-    slapadd_cmd = '/opt/symas/bin/slapadd'
-    config = '/opt/symas/etc/openldap/slapd.conf'
-
-    runcmd([slapadd_cmd, '-b', 'o=gluu', '-f', config, '-l', dest])
-
-
 def render_ldif():
+    consul.kv.set('ldap_hostname', GLUU_LDAP_HOSTNAME)
+
     ctx_data = {
         # o_site.ldif
         # has no variables
@@ -179,7 +171,12 @@ def render_ldif():
         'scim_rp_client_base64_jwks': consul.kv.get('scim_rp_client_base64_jwks'),
 
         # scripts.ldif
-        # already coverd at this point
+        # already covered at this point
+
+        # replication.ldif
+        'replication_dn': consul.kv.get('replication_dn'),
+        'replication_cn': consul.kv.get('replication_cn'),
+        'encoded_replication_pw': consul.kv.get('encoded_replication_pw'),
     }
 
     ldif_template_base = '/ldap/templates/ldif'
@@ -210,7 +207,8 @@ def import_ldif():
         'asimba.ldif',
         'passport.ldif',
         'oxpassport-config.ldif',
-        'oxidp.ldif'
+        'oxidp.ldif',
+        "replication.ldif",
     ]
 
     slapadd_cmd = '/opt/symas/bin/slapadd'
@@ -229,7 +227,6 @@ def cleanup():
 
 
 # TODO: Remove oxtrust related code from openldap
-# oxtrust start
 def reindent(text, num_spaces=1):
     text = [(num_spaces * " ") + line.lstrip() for line in text.splitlines()]
     text = "\n".join(text)
@@ -244,6 +241,8 @@ def generate_base64_contents(text, num_spaces=1):
 
 
 def oxtrust_config():
+    consul.kv.set("oxTrustConfigGeneration", False)
+
     # keeping redundent data in context of ldif ctx_data dict for now.
     # so that we can easily remove it from here
     ctx = {
@@ -285,20 +284,15 @@ def oxtrust_config():
         json_file_path = os.path.join(oxtrust_template_base, json_file)
         with open(json_file_path, 'r') as fp:
             consul.kv.set(key, generate_base64_contents(fp.read() % ctx))
-# oxtrust end
 
 
 def run():
-    if not GLUU_LDAP_REPLICATE_FROM:
-        set_kv()
-        configure_provider_openldap()
+    configure_provider_openldap()
+    if as_boolean(GLUU_LDAP_INIT_DATA):
         oxtrust_config()
         render_ldif()
         import_ldif()
-        add_replication_user()
-        cleanup()
-    else:
-        configure_consumer_openldap()
+    cleanup()
 
 
 def decrypt_text(encrypted_text, key):
@@ -317,11 +311,3 @@ def decrypt_text(encrypted_text, key):
 
 if __name__ == '__main__':
     run()
-
-
-# related setup functions,
-# start_services
-# install_ldap_server
-# install_openldap (done in dockerfile)
-# configure_openldap
-# import_ldif_openldap
