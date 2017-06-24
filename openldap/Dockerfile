@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y \
     python-pip \
     swig \
     libssl-dev \
+    ntp \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -60,7 +61,9 @@ RUN mkdir -p /opt/symas/etc/openldap/slapd.d
 COPY schema /opt/gluu/schema/openldap
 COPY templates ./templates
 COPY scripts ./scripts
+COPY static ./static
 RUN cp ./templates/slapd/symas-openldap.conf /opt/symas/etc/openldap/symas-openldap.conf
+RUN cp ./static/ntp.conf /etc/
 
 # Data dir
 RUN mkdir -p /opt/gluu/data/main_db

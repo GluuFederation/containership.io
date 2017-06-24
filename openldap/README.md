@@ -1,6 +1,6 @@
-# openldap
+# OpenLDAP
 
-A docker image version of openldap.
+A docker image version of OpenLDAP.
 
 ## Installation
 
@@ -20,8 +20,8 @@ docker pull gluufederation/openldap:containership
 
 - `GLUU_KV_HOST`: hostname or IP address of Consul.
 - `GLUU_KV_PORT`: port of Consul.
-- `GLUU_LDAP_HOSTNAME`: hostname of ldap (only useful in provider role).
-- `GLUU_LDAP_REPLICATE_FROM`: location of ldap provider (only useful in consumer role).
+- `GLUU_LDAP_HOSTNAME`: hostname of ldap.
+- `GLUU_LDAP_INIT_DATA`: whether to import initial LDAPentries (possible value are `true` or `false`).
 
 ## Volumes
 
@@ -30,28 +30,31 @@ docker pull gluufederation/openldap:containership
 
 ## Running The Container
 
-Here's an example to run the container as ldap provider:
+Here's an example to run the container as ldap master with initial LDAP entries:
 
 ```
 docker run -d \
-    --name ldap-provider \
+    --name ldap-master \
     -e GLUU_KV_HOST=my.consul.domain.com \
     -e GLUU_KV_PORT=8500 \
     -e GLUU_LDAP_HOSTNAME=my.ldap.hostname \
+    -e GLUU_LDAP_INIT_DATA=true \
     gluufederation/openldap:containership
 ```
 
-Here's an example to run the container as ldap consumer:
+To add other container(s):
 
 ```
 docker run -d \
-    --name ldap-consumer \
+    --name ldap-master-no-data \
     -e GLUU_KV_HOST=my.consul.domain.com \
     -e GLUU_KV_PORT=8500 \
-    -e GLUU_LDAP_REPLICATE_FROM=ldap-provider.domain.com:1389 \
+    -e GLUU_LDAP_INIT_DATA=false \
     gluufederation/openldap:containership
 ```
 
-## Customizing openldap
+Note: all containers are synchronized using `ntp` pointed to [Google NTP](https://developers.google.com/time/) servers.
+
+## Customizing OpenLDAP
 
 TODO
