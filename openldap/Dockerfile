@@ -15,6 +15,9 @@ RUN apt-get update && apt-get install -y \
     swig \
     libssl-dev \
     ntp \
+    at \
+    libldap2-dev \
+    libsasl2-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -72,6 +75,9 @@ RUN mkdir -p /opt/gluu/data/site_db
 # Volumes
 VOLUME /opt/gluu/data/main_db
 VOLUME /opt/gluu/data/site_db
+
+RUN touch /var/log/replicator.log
+RUN chmod +x ./scripts/replicator.sh
 
 # TODO: currently using port 1636 but will change to 1389
 #EXPOSE 1636
