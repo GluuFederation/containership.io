@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+import time
 from collections import namedtuple
 from contextlib import contextmanager
 
@@ -17,7 +18,7 @@ OLCSYNCREPL_TMPL = """rid={replication_id} provider={protocol}://{peer_host}:{pe
 
 LDAPServer = namedtuple(
     "LDAPServer",
-    ["server_id", "host", "port", "active"]
+    ["server_id", "host", "port"]
 )
 
 kv_host = os.environ.get("GLUU_KV_HOST", "localhost")
@@ -98,7 +99,9 @@ def multi_master_syncrepl(servers, user, passwd, replication_dn,
         try:
             with ldap_conn(server.host, server.port, user, passwd) as conn:
                 modify_olcsyncrepl(conn, server, olcsyncrepl)
+                time.sleep(10)
                 modify_mirrormode(conn, server)
+                time.sleep(10)
         except (ldap.TYPE_OR_VALUE_EXISTS, ldap.INAPPROPRIATE_MATCHING, ldap.SERVER_DOWN) as exc:
             logger.warn("unable to modify entries at {}:{}; reason={}".format(
                 server.host, server.port, exc
@@ -167,31 +170,27 @@ def modify_mirrormode(conn, server, mode="TRUE"):
     conn.modify_s(dn, modlist)
 
 
-def get_active_servers(max_num=4):
-    servers = _get_servers_from_catalog(max_num)
+def get_active_servers():
+    servers = _get_servers_from_catalog()
     if not servers:
         servers = _get_servers_from_kv()
-    return servers
 
-
-def _get_servers_from_catalog(max_num=4):
-    active_servers = []
-    server_id = 1
-
-    for server in consul.catalog.service("ldap-master"):
-        active_servers.append(LDAPServer(
-            server_id=server_id,
-            host=server["Address"],
-            port=server["ServicePort"],
-            active=True,
-        ))
-        if len(active_servers) == max_num:
-            break
-        server_id += 1
+    active_servers = [
+        LDAPServer(server_id=idx, host=server["host"], port=server["port"])
+        for idx, server in enumerate(servers, 1)
+    ]
     return active_servers
 
 
-def _get_servers_from_kv(max_num=4):
+def _get_servers_from_catalog():
+    active_servers = [
+        {"host": service["Address"], "port": service["ServicePort"]}
+        for service in consul.catalog.service("ldap-master")
+    ]
+    return active_servers
+
+
+def _get_servers_from_kv():
     active_servers = []
     servers = [
         json.loads(master)
@@ -201,20 +200,13 @@ def _get_servers_from_kv(max_num=4):
     user = "cn=directory manager,o=gluu"
     passwd = decrypt_text(consul.kv.get("encoded_ox_replication_pw"),
                           consul.kv.get("encoded_salt"))
-    server_id = 1
 
     for server in servers:
         try:
+            logger.info("connecting to server {}:{}".format(server["host"], server["port"]))
             with ldap_conn(server["host"], server["port"], user, passwd):
-                active_servers.append(LDAPServer(
-                    server_id=server_id,
-                    host=server["host"],
-                    port=server["port"],
-                    active=True,
-                ))
-                if len(active_servers) == max_num:
-                    break
-                server_id += 1
+                logger.info("server {}:{} marked as active".format(server["host"], server["port"]))
+                active_servers.append(server)
         except ldap.SERVER_DOWN as exc:
             logger.warn("excluding server {}:{}; reason={}".format(
                 server["host"], server["port"], exc
@@ -226,7 +218,6 @@ def _get_servers_from_kv(max_num=4):
 if __name__ == "__main__":
     logger.info("checking active servers")
     active_servers = get_active_servers()
-
     servers_num = len(active_servers)
 
     if not servers_num:
