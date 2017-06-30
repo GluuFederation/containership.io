@@ -222,6 +222,16 @@ def import_ldif():
             runcmd([slapadd_cmd, '-b', 'o=gluu', '-f', config, '-l', ldif_file_path])
 
 
+def import_custom_schema():
+    base_path = '/ldap/custom_schema'
+    pattern = '/*.ldif'
+    slapadd_cmd = '/opt/symas/bin/slapadd'
+    config = '/opt/symas/etc/openldap/slapd.conf'
+
+    for file_path in glob.glob(base_path + pattern):
+        runcmd([slapadd_cmd, '-b', 'o=gluu', '-f', config, '-l', file_path])
+
+
 def cleanup():
     shutil.rmtree(TMPDIR)
 
@@ -292,6 +302,7 @@ def run():
         oxtrust_config()
         render_ldif()
         import_ldif()
+        import_custom_schema()
     cleanup()
 
 

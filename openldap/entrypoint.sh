@@ -1,7 +1,16 @@
 #!/bin/bash
 set -e
 
+download_custom_schema() {
+    if [ ! -z ${GLUU_CUSTOM_SCHEMA_URL} ]; then
+        wget -q ${GLUU_CUSTOM_SCHEMA_URL} -O /ldap/custom_schema/custom-schema.tar.gz
+        cd /ldap/custom_schema
+        tar xf custom-schema.tar.gz
+    fi
+}
+
 if [ ! -f /touched ]; then
+    download_custom_schema
     python /ldap/scripts/run.py
     touch /touched
 fi

@@ -78,6 +78,9 @@ VOLUME /opt/gluu/data/site_db
 RUN touch /var/log/replicator.log
 RUN chmod +x ./scripts/replicator.sh
 
+# Custom schema path
+RUN mkdir -p /ldap/custom_schema
+
 # TODO: currently using port 1636 but will change to 1389
 #EXPOSE 1636
 EXPOSE 1389
