@@ -15,7 +15,6 @@ RUN apt-get update && apt-get install -y \
     swig \
     libssl-dev \
     ntp \
-    at \
     libldap2-dev \
     libsasl2-dev \
     && apt-get clean \

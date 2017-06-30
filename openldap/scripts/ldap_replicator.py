@@ -24,12 +24,11 @@ LDAPServer = namedtuple(
 kv_host = os.environ.get("GLUU_KV_HOST", "localhost")
 kv_port = os.environ.get("GLUU_KV_PORT", 8500)
 check_interval = os.environ.get("GLUU_LDAP_CHECK_INTERVAL", 30)
-check_logfile = os.environ.get("GLUU_LDAP_CHECK_LOGFILE", "/var/log/replicator.log")
 consul = consulate.Consul(host=kv_host, port=kv_port)
 
 logger = logging.getLogger("ldap_replicator")
 logger.setLevel(logging.INFO)
-ch = logging.FileHandler(check_logfile)
+ch = logging.StreamHandler()
 fmt = logging.Formatter('[%(levelname)s] - %(asctime)s - %(message)s')
 ch.setFormatter(fmt)
 logger.addHandler(ch)
