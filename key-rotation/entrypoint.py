@@ -6,8 +6,6 @@ import shlex
 import subprocess
 import time
 from contextlib import contextmanager
-from datetime import datetime
-from datetime import timedelta
 
 import consulate
 import ldap
@@ -59,11 +57,27 @@ def generate_openid_keys(passwd, jks_path, dn, exp=365,
 def should_rotate_keys():
     last_rotation = consul.kv.get("key_rotated_at")
 
+    # keys are not rotated yet
     if not last_rotation:
         return True
 
-    next_rotation = datetime.utcfromtimestamp(int(last_rotation)) + timedelta(days=GLUU_KEY_ROTATION_INTERVAL)
-    now = datetime.utcnow()
+    # ensure rotation interval is an integer
+    try:
+        rotation_interval = int(GLUU_KEY_ROTATION_INTERVAL)
+    except ValueError:
+        rotation_interval = 2
+
+    # use default rotation interval if the number is less than equal 0
+    if rotation_interval <= 0:
+        rotation_interval = 2
+
+    # when keys are supposed to be rotated
+    next_rotation = int(last_rotation) + (60 * 60 * 24 * rotation_interval)
+
+    # current timestamp
+    now = int(time.time())
+
+    # check if current timestamp surpassed expected rotation timestamp
     return now > next_rotation
 
 
@@ -119,6 +133,10 @@ def get_ldap_servers():
 
 
 def modify_oxauth_config(pub_keys):
+    if not pub_keys:
+        logger.warn("invalid public key")
+        return False
+
     user = "cn=directory manager,o=gluu"
     passwd = decrypt_text(consul.kv.get("encoded_ox_ldap_pw"),
                           consul.kv.get("encoded_salt"))
@@ -153,7 +171,7 @@ def modify_oxauth_config(pub_keys):
                 dyn_conf = json.loads(attrs["oxAuthConfDynamic"][0])
                 dyn_conf.update({
                     "keyRegenerationEnabled": False,  # always set to False
-                    "keyRegenerationInterval": GLUU_KEY_ROTATION_INTERVAL * 24,
+                    "keyRegenerationInterval": int(GLUU_KEY_ROTATION_INTERVAL) * 24,
                     "defaultSignatureAlgorithm": "RS512",
                 })
                 dyn_conf.update({
@@ -197,7 +215,7 @@ if __name__ == "__main__":
                 )
 
                 if retcode == 0:
-                    pub_keys = json.loads(out).get("pub_keys")
+                    pub_keys = json.loads(out).get("keys")
                     if modify_oxauth_config(pub_keys):
                         consul.kv.set("key_rotated_at", int(time.time()))
                         logger.info("keys have been rotated")

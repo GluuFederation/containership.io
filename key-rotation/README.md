@@ -20,18 +20,23 @@ docker pull gluufederation/key-rotation:containership
 
 - `GLUU_KV_HOST`: hostname or IP address of Consul.
 - `GLUU_KV_PORT`: port of Consul.
-- `GLUU_LDAP_URL`: URL to LDAP (single instance or load-balanced).
+- `GLUU_LDAP_URL`: URL to LDAP in `host:port` format string (i.e. `192.168.100.4:1389`); multiple URLs can be used using comma-separated value (i.e. `192.168.100.1:1389,192.168.100.2:1389`).
+- `GLUU_KEY_ROTATION_INTERVAL`: Interval of key rotation check (in days).
+
+## Volumes
+
+1. `/etc/certs` directory.
 
 ## Running The Container
 
-Here's an example to run the container as ldap master with initial LDAP entries:
+Here's an example to run the container:
 
 ```
 docker run -d \
-    --name ldap-master \
+    --name key-rotation \
     -e GLUU_KV_HOST=my.consul.domain.com \
     -e GLUU_KV_PORT=8500 \
-    -e GLUU_LDAP_URL=my.ldap.domain.com:1636 \
+    -e GLUU_LDAP_URL=my.ldap.domain.com:1389 \
     -e GLUU_KEY_ROTATION_INTERVAL=2 \
     gluufederation/key-rotation:containership
 ```

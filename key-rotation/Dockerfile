@@ -36,6 +36,8 @@ COPY entrypoint.py ./
 
 RUN mkdir -p /etc/certs
 
+VOLUME /etc/certs
+
 ENV GLUU_KV_HOST localhost
 ENV GLUU_KV_PORT 8500
 ENV GLUU_LDAP_URL localhost:8500
