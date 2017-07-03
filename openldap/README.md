@@ -57,4 +57,19 @@ Note: all containers are synchronized using `ntp` pointed to [Google NTP](https:
 
 ## Customizing OpenLDAP
 
-TODO
+If user has a custome ldap schema then user need to put the schema file in a tar.gz archive.
+This archive will just contain schama file. User need to provide a url for that archive file.
+user must pass custom schema to init ldap master to take effect.
+
+Here's an example to run the container as ldap master with initial LDAP entries and custom schema:
+
+```
+docker run -d \
+    --name ldap-master \
+    -e GLUU_KV_HOST=my.consul.domain.com \
+    -e GLUU_KV_PORT=8500 \
+    -e GLUU_LDAP_HOSTNAME=my.ldap.hostname \
+    -e GLUU_LDAP_INIT_DATA=true \
+    -e GLUU_CUSTOM_SCHEMA_URL=<https://url/of/custom-schema.tar.gz>
+    gluufederation/openldap:containership
+```
