@@ -92,20 +92,12 @@ RUN mkdir -p ${JETTY_BASE}/oxauth/custom/pages ${JETTY_BASE}/oxauth/custom/stati
 # Directory for rendered config
 RUN mkdir -p /etc/gluu/conf
 
-# Directory for scripts
-RUN mkdir -p /opt/scripts/
-
 # Directory for templates
 RUN mkdir -p /opt/templates/
 
 # Copy templates
-COPY libs/duo_web.py /opt/gluu/python/libs/
-COPY libs/python.txt /opt/gluu/python/libs/
-COPY certs/duo_creds.json /etc/certs/
-COPY certs/gplus_client_secrets.json /etc/certs/
-COPY certs/super_gluu_creds.json /etc/certs/
-COPY certs/cert_creds.json /etc/certs/
-COPY certs/otp_configuration.json /etc/certs/
+COPY libs /opt/gluu/python/libs
+COPY certs /etc/certs
 COPY jetty/oxauth_web_resources.xml ${JETTY_BASE}/oxauth/webapps/
 COPY conf/ox-ldap.properties.tmpl /opt/templates/
 COPY conf/salt.tmpl /opt/templates/
@@ -141,7 +133,6 @@ VOLUME ${JETTY_BASE}/oxauth/custom/pages
 VOLUME ${JETTY_BASE}/oxauth/custom/static
 VOLUME ${JETTY_BASE}/oxauth/lib/ext
 
-COPY scripts/entrypoint.sh /opt/scripts/
-COPY scripts/entrypoint.py /opt/scripts/
+COPY scripts /opt/scripts
 RUN chmod +x /opt/scripts/entrypoint.sh
 ENTRYPOINT ["/opt/scripts/entrypoint.sh"]

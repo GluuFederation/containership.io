@@ -28,5 +28,8 @@ if [ ! -f /touched ]; then
     touch /touched
 fi
 
+# run JKS sync as background job
+nohup python /opt/scripts/jks_sync.py >>/var/log/jks_sync.log 2>&1&
+
 cd /opt/gluu/jetty/oxauth
 exec java -jar /opt/jetty/start.jar -server -Xms256m -Xmx4096m -XX:+DisableExplicitGC -Dgluu.base=/etc/gluu -Dcatalina.base=/opt/gluu/jetty/oxauth -Dpython.home=/opt/jython
