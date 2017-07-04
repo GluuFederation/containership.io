@@ -133,6 +133,13 @@ VOLUME ${JETTY_BASE}/oxauth/custom/pages
 VOLUME ${JETTY_BASE}/oxauth/custom/static
 VOLUME ${JETTY_BASE}/oxauth/lib/ext
 
+# cron
+RUN mkdir -p /opt/jks_sync
+COPY cron/jks_sync /etc/cron.d/
+# Give execution rights on the cron job
+RUN chmod 0644 /etc/cron.d/jks_sync
+RUN touch /var/log/jks_sync.log
+
 COPY scripts /opt/scripts
 RUN chmod +x /opt/scripts/entrypoint.sh
 ENTRYPOINT ["/opt/scripts/entrypoint.sh"]

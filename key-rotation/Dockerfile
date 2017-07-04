@@ -33,6 +33,7 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY entrypoint.py ./
+COPY entrypoint.sh ./
 
 RUN mkdir -p /etc/certs
 
@@ -43,4 +44,15 @@ ENV GLUU_KV_PORT 8500
 ENV GLUU_LDAP_URL localhost:8500
 ENV GLUU_KEY_ROTATION_INTERVAL 2
 
-ENTRYPOINT ["python", "./entrypoint.py"]
+# Add crontab file in the cron directory
+COPY cron/key-rotation /etc/cron.d/
+
+# Give execution rights on the cron job
+RUN chmod 0644 /etc/cron.d/key-rotation
+
+# Create the log file to be able to run tail
+RUN touch /var/log/key-rotation.log
+
+RUN chmod +x /opt/key-rotation/entrypoint.sh
+
+ENTRYPOINT ["/opt/key-rotation/entrypoint.sh"]

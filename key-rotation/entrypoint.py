@@ -10,6 +10,7 @@ from contextlib import contextmanager
 import consulate
 import ldap
 from M2Crypto.EVP import Cipher
+from requests.exceptions import ConnectionError
 
 GLUU_KV_HOST = os.environ.get("GLUU_KV_HOST", "localhost")
 GLUU_KV_PORT = os.environ.get("GLUU_KV_PORT", 8500)
@@ -133,10 +134,6 @@ def get_ldap_servers():
 
 
 def modify_oxauth_config(pub_keys):
-    if not pub_keys:
-        logger.warn("invalid public key")
-        return False
-
     user = "cn=directory manager,o=gluu"
     passwd = decrypt_text(consul.kv.get("encoded_ox_ldap_pw"),
                           consul.kv.get("encoded_salt"))
@@ -210,30 +207,44 @@ def encode_jks(jks="/etc/certs/oxauth-keys.jks"):
     return encoded_jks
 
 
+def rotate_keys():
+    out, err, retcode = generate_openid_keys(
+        consul.kv.get("oxauth_openid_jks_pass"),
+        consul.kv.get("oxauth_openid_jks_fn"),
+        r"{}".format(consul.kv.get("default_openid_jks_dn_name")),
+    )
+
+    if retcode != 0:
+        logger.error("unable to generate keys; reason={}".format(err))
+        return False
+
+    try:
+        pub_keys = json.loads(out).get("keys")
+    except (TypeError, ValueError) as exc:
+        logger.warn("unable to get public keys; reason={}".format(exc))
+        return False
+
+    if modify_oxauth_config(pub_keys):
+        consul.kv.set("oxauth_key_rotated_at", int(time.time()))
+        consul.kv.set("oxauth_jks_base64", encode_jks())
+        logger.info("keys have been rotated")
+        return True
+
+    # mark rotation as failed
+    return False
+
+
 def main():
     try:
-        while True:
-            logger.info("checking whether key should be rotated")
-            if should_rotate_keys():
-                out, err, retcode = generate_openid_keys(
-                    consul.kv.get("oxauth_openid_jks_pass"),
-                    consul.kv.get("oxauth_openid_jks_fn"),
-                    r"{}".format(consul.kv.get("default_openid_jks_dn_name")),
-                )
+        logger.info("checking whether key should be rotated")
 
-                if retcode == 0:
-                    pub_keys = json.loads(out).get("keys")
-                    if modify_oxauth_config(pub_keys):
-                        consul.kv.set("oxauth_key_rotated_at", int(time.time()))
-                        consul.kv.set("oxauth_jks_base64", encode_jks())
-                        logger.info("keys have been rotated")
-                else:
-                    logger.error("unable to generate keys; reason={}".format(err))
+        try:
+            if should_rotate_keys():
+                rotate_keys()
             else:
                 logger.info("no need to rotate keys at the moment")
-
-            # sane interval
-            time.sleep(30)
+        except ConnectionError as exc:
+            logger.warn("unable to connect to KV storage; reason={}".format(exc))
     except KeyboardInterrupt:
         logger.warn("canceled by user; exiting ...")
 

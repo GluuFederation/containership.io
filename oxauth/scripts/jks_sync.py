@@ -1,9 +1,10 @@
 import base64
 import logging
 import os
-import time
+# import time
 
 import consulate
+from requests.exceptions import ConnectionError
 
 GLUU_KV_HOST = os.environ.get("GLUU_KV_HOST", "localhost")
 GLUU_KV_PORT = os.environ.get("GLUU_KV_PORT", 8500)
@@ -44,16 +45,29 @@ def should_sync_jks():
     return mtime < int(last_rotation)
 
 
+def sync_jks():
+    if jks_created():
+        logger.info("oxauth-keys.jks has been synchronized")
+        return True
+
+    # mark sync as failed
+    return False
+
+
 def main():
     try:
-        while True:
-            logger.info("checking whether JKS should be synchronized")
+        # while True:
+        logger.info("checking whether JKS should be synchronized")
+        try:
             if should_sync_jks():
-                if jks_created():
-                    logger.info("oxauth-keys.jks has been synchronized")
+                sync_jks()
             else:
-                logger.info("no need to fetch JKS at the moment")
-            time.sleep(10)
+                logger.info("no need to sync JKS at the moment")
+        except ConnectionError as exc:
+            logger.warn("unable to connect to KV storage; reason={}".format(exc))
+
+            # # sane interval
+            # time.sleep(10)
     except KeyboardInterrupt:
         logger.warn("canceled by user; exiting ...")
 
