@@ -55,7 +55,7 @@ def generate_openid_keys(passwd, jks_path, dn, exp=365,
 
 
 def should_rotate_keys():
-    last_rotation = consul.kv.get("key_rotated_at")
+    last_rotation = consul.kv.get("oxauth_key_rotated_at")
 
     # keys are not rotated yet
     if not last_rotation:
@@ -203,7 +203,14 @@ def modify_oxauth_config(pub_keys):
     return False
 
 
-if __name__ == "__main__":
+def encode_jks(jks="/etc/certs/oxauth-keys.jks"):
+    encoded_jks = ""
+    with open(jks, "rb") as fd:
+        encoded_jks = base64.b64encode(fd.read())
+    return encoded_jks
+
+
+def main():
     try:
         while True:
             logger.info("checking whether key should be rotated")
@@ -217,7 +224,8 @@ if __name__ == "__main__":
                 if retcode == 0:
                     pub_keys = json.loads(out).get("keys")
                     if modify_oxauth_config(pub_keys):
-                        consul.kv.set("key_rotated_at", int(time.time()))
+                        consul.kv.set("oxauth_key_rotated_at", int(time.time()))
+                        consul.kv.set("oxauth_jks_base64", encode_jks())
                         logger.info("keys have been rotated")
                 else:
                     logger.error("unable to generate keys; reason={}".format(err))
@@ -228,3 +236,7 @@ if __name__ == "__main__":
             time.sleep(30)
     except KeyboardInterrupt:
         logger.warn("canceled by user; exiting ...")
+
+
+if __name__ == "__main__":
+    main()
