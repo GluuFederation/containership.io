@@ -8,6 +8,7 @@ import struct
 import subprocess
 import traceback
 import tempfile
+import logging
 
 import consulate
 from M2Crypto.EVP import Cipher
@@ -21,6 +22,13 @@ GLUU_LDAP_INIT_DATA = os.environ.get("GLUU_LDAP_INIT_DATA", True)
 TMPDIR = tempfile.mkdtemp()
 
 consul = consulate.Consul(host=GLUU_KV_HOST, port=GLUU_KV_PORT)
+
+logger = logging.getLogger("ldap_setup")
+logger.setLevel(logging.INFO)
+ch = logging.FileHandler('/ldap/setup.log')
+fmt = logging.Formatter('[%(levelname)s] - %(asctime)s - %(message)s')
+ch.setFormatter(fmt)
+logger.addHandler(ch)
 
 
 def as_boolean(val, default=False):
@@ -63,16 +71,17 @@ def runcmd(args, cwd=None, env=None, useWait=False):
         p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, env=env)
         if useWait:
             code = p.wait()
-            print 'Run: %s with result code: %d' % (' '.join(args), code)
+            logger.info('Run: %s with result code: %d' % (' '.join(args), code))
         else:
             output, err = p.communicate()
             if output:
-                print output
+                logger.info(output)
             if err:
-                print err
+                logger.warn(err)
+
     except:
-        print "Error running command : %s" % " ".join(args)
-        print traceback.format_exc()
+        logger.warn('Error running command : %s' % ' '.join(args))
+        logger.warn(traceback.format_exc())
 
 
 def configure_provider_openldap():
@@ -297,11 +306,15 @@ def oxtrust_config():
 
 
 def run():
+    logger.info('start of basic configuration')
     configure_provider_openldap()
     if as_boolean(GLUU_LDAP_INIT_DATA):
         oxtrust_config()
+        logger.info('start rendering of ldif files')
         render_ldif()
+        logger.info('start importing rendered ldif files')
         import_ldif()
+        logger.info('start importing custom ldif file')
         import_custom_schema()
     cleanup()
 
