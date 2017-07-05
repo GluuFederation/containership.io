@@ -43,4 +43,4 @@ docker run -d \
 
 ## TODO
 
-1. Distribute `oxauth-keys.jks`
+* [x] Distribute `oxauth-keys.jks`
