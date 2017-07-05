@@ -18,8 +18,9 @@ RUN apt-get update && apt-get install -y --force-yes \
     && rm -rf /var/lib/apt/lists/*
 
 # JAR files required to generate OpenID Connect keys
+ENV OX_VERSION 3.1.0-SNAPSHOT
 RUN mkdir -p /opt/key-rotation/javalibs
-RUN wget -q http://ox.gluu.org/maven/org/xdi/oxauth-client/3.1.0-SNAPSHOT/oxauth-client-3.1.0-SNAPSHOT-jar-with-dependencies.jar -O /opt/key-rotation/javalibs/keygen.jar
+RUN wget -q http://ox.gluu.org/maven/org/xdi/oxauth-client/${OX_VERSION}/oxauth-client-${OX_VERSION}-jar-with-dependencies.jar -O /opt/key-rotation/javalibs/keygen.jar
 
 RUN pip install -U pip
 
@@ -27,13 +28,15 @@ RUN pip install -U pip
 # and to make sure latest pip is being used, not from OS one
 ENV PYTHONPATH="/usr/local/lib/python2.7/dist-packages:/usr/lib/python2.7/dist-packages"
 
+# tini integration (https://github.com/krallin/tini)
+ENV TINI_VERSION v0.15.0
+RUN wget -q https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini -O /tini \
+    && chmod +x /tini
+
 WORKDIR /opt/key-rotation
 
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
-
-COPY entrypoint.py ./
-COPY entrypoint.sh ./
 
 RUN mkdir -p /etc/certs
 
@@ -43,6 +46,9 @@ ENV GLUU_KV_HOST localhost
 ENV GLUU_KV_PORT 8500
 ENV GLUU_LDAP_URL localhost:8500
 ENV GLUU_KEY_ROTATION_INTERVAL 2
+
+COPY entrypoint.py ./
+COPY entrypoint.sh ./
 
 # Add crontab file in the cron directory
 COPY cron/key-rotation /etc/cron.d/
@@ -55,4 +61,4 @@ RUN touch /var/log/key-rotation.log
 
 RUN chmod +x /opt/key-rotation/entrypoint.sh
 
-ENTRYPOINT ["/opt/key-rotation/entrypoint.sh"]
+ENTRYPOINT ["/tini", "/opt/key-rotation/entrypoint.sh"]
