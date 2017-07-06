@@ -7,13 +7,13 @@ A docker image version of OpenLDAP.
 Build the image:
 
 ```
-docker build --rm --force-rm -t gluufederation/openldap:containership .
+docker build --rm --force-rm -t gluufederation/openldap:latest .
 ```
 
 Or get it from Docker Hub:
 
 ```
-docker pull gluufederation/openldap:containership
+docker pull gluufederation/openldap:latest
 ```
 
 ## Environment Variables

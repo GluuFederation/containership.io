@@ -7,13 +7,13 @@ A docker image to rotate oxAuth keys.
 Build the image:
 
 ```
-docker build --rm --force-rm -t gluufederation/key-rotation:containership .
+docker build --rm --force-rm -t gluufederation/key-rotation:latest .
 ```
 
 Or get it from Docker Hub:
 
 ```
-docker pull gluufederation/key-rotation:containership
+docker pull gluufederation/key-rotation:latest
 ```
 
 ## Environment Variables

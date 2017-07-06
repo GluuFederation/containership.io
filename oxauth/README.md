@@ -7,13 +7,13 @@ A docker image version of oxAuth.
 Build the image:
 
 ```
-docker build --rm --force-rm -t gluufederation/oxauth:containership .
+docker build --rm --force-rm -t gluufederation/oxauth:latest .
 ```
 
 Or get it from Docker Hub:
 
 ```
-docker pull gluufederation/oxauth:containership
+docker pull gluufederation/oxauth:latest
 ```
 
 ## Environment Variables

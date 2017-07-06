@@ -7,13 +7,13 @@ A docker image version of oxTrust.
 Build the image:
 
 ```
-docker build --rm --force-rm -t gluufederation/oxtrust:containership .
+docker build --rm --force-rm -t gluufederation/oxtrust:latest .
 ```
 
 Or get it from Docker Hub:
 
 ```
-docker pull gluufederation/oxtrust:containership
+docker pull gluufederation/oxtrust:latest
 ```
 
 ## Environment Variables

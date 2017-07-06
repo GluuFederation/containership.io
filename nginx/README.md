@@ -7,13 +7,13 @@ A docker image version of nginx.
 Build the image:
 
 ```
-docker build --rm --force-rm -t gluufederation/nginx:containership .
+docker build --rm --force-rm -t gluufederation/nginx:latest .
 ```
 
 Or get it from Docker Hub:
 
 ```
-docker pull gluufederation/nginx:containership
+docker pull gluufederation/nginx:latest
 ```
 
 ## Running The Container

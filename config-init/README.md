@@ -7,13 +7,13 @@ A docker image to generate config required by other docker images used in Gluu S
 Build the image:
 
 ```
-docker build --rm --force-rm -t gluufederation/config-init .
+docker build --rm --force-rm -t gluufederation/config-init:latest .
 ```
 
 Or get it from Docker Hub:
 
 ```
-docker pull gluufederation/config-init
+docker pull gluufederation/config-init:latest
 ```
 
 ## Running The Container
