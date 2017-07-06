@@ -15,4 +15,4 @@ if [ ! -f /touched ]; then
     enable_gluu_https
 fi
 
-exec /usr/sbin/nginx -g "daemon off;"
+exec gosu root /usr/sbin/nginx -g "daemon off;"
