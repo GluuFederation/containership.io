@@ -87,8 +87,8 @@ EXPOSE 1389
 
 # Add Tini
 ENV TINI_VERSION v0.15.0
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
-RUN chmod +x /tini
+RUN wget -q https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini -O /tini \
+    && chmod +x /tini
 ENTRYPOINT ["/tini", "--"]
 
 # Entrypoint

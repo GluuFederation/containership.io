@@ -18,7 +18,7 @@ fi
 # TODO: should we use supervisor to manage ntpd?
 
 # ensure ntp always running after container start/restart
-service ntp restart
+service ntp restart > /dev/null
 
 # run replication as background job
 nohup /ldap/scripts/replicator.sh >>/var/log/replicator.log 2>&1&
