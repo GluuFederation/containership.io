@@ -23,6 +23,9 @@ RUN apt-get update && apt-get install -y \
 # workaround for bug on ubuntu 14.04 with openjdk-8-jre-headless
 RUN /var/lib/dpkg/info/ca-certificates-java.postinst configure
 
+# Set openjdk 8 as default java
+RUN cd /usr/lib/jvm && ln -s java-1.8.0-openjdk-amd64 default-java
+
 # =====
 # Jetty
 # =====
@@ -39,10 +42,13 @@ RUN wget -q ${JETTY_TGZ_URL} -O /tmp/jetty.tar.gz \
     && mv /opt/jetty-distribution-${JETTY_VERSION} ${JETTY_HOME} \
     && rm -rf /tmp/jetty.tar.gz
 
-RUN mv ${JETTY_HOME}/etc/webdefault.xml ${JETTY_HOME}/etc/webdefault.xml.bak
-RUN mv ${JETTY_HOME}/etc/jetty.xml ${JETTY_HOME}/etc/jetty.xml.bak
+RUN mv ${JETTY_HOME}/etc/webdefault.xml ${JETTY_HOME}/etc/webdefault.xml.bak \
+    && mv ${JETTY_HOME}/etc/jetty.xml ${JETTY_HOME}/etc/jetty.xml.bak
 COPY jetty/webdefault.xml ${JETTY_HOME}/etc/
 COPY jetty/jetty.xml ${JETTY_HOME}/etc/
+
+# Ports required by jetty
+EXPOSE 8080
 
 # ======
 # Jython
@@ -80,66 +86,69 @@ RUN wget -q ${OXAUTH_DOWNLOAD_URL} -O /tmp/oxauth.war \
 RUN mkdir -p ${JETTY_USER_HOME_LIB}
 RUN wget -q http://central.maven.org/maven2/org/bouncycastle/bcprov-jdk16/1.46/bcprov-jdk16-1.46.jar -O ${JETTY_USER_HOME_LIB}/bcprov-jdk16-1.46.jar
 
-# Directory for certificates
-RUN mkdir -p /etc/certs
+# ====
+# tini
+# ====
 
-# Directory for scripts, e.g. duo_web.py
-RUN mkdir -p /opt/gluu/python/libs
+ENV TINI_VERSION v0.15.0
+RUN wget -q https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini -O /tini \
+    && chmod +x /tini
+ENTRYPOINT ["/tini", "--"]
 
-# Directory for custom pages and static files
-RUN mkdir -p ${JETTY_BASE}/oxauth/custom/pages ${JETTY_BASE}/oxauth/custom/static
+# ====
+# gosu
+# ====
 
-# Directory for rendered config
-RUN mkdir -p /etc/gluu/conf
+ENV GOSU_VERSION 1.10
+RUN wget -q https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-amd64 -O /usr/local/bin/gosu \
+    && chmod +x /usr/local/bin/gosu
 
-# Directory for templates
-RUN mkdir -p /opt/templates/
-
-# Copy templates
-COPY libs /opt/gluu/python/libs
-COPY certs /etc/certs
-COPY jetty/oxauth_web_resources.xml ${JETTY_BASE}/oxauth/webapps/
-COPY conf/ox-ldap.properties.tmpl /opt/templates/
-COPY conf/salt.tmpl /opt/templates/
-
-# Set openjdk 8 as default java
-RUN cd /usr/lib/jvm && ln -s java-1.8.0-openjdk-amd64 default-java
-
-# Ports required by jetty
-EXPOSE 8080
-
-# Python packages
+# ======
+# Python
+# ======
 RUN pip install -U pip
 
 # A workaround to address https://github.com/docker/docker-py/issues/1054
 # and to make sure latest pip is being used, not from OS one
 ENV PYTHONPATH="/usr/local/lib/python2.7/dist-packages:/usr/lib/python2.7/dist-packages"
 
-RUN pip install consulate
+RUN pip install "consulate==0.6.0"
 
-# URL to LDAP
-ENV GLUU_LDAP_URL localhost:1636
-
-# KV store hostname or IP address
-ENV GLUU_KV_HOST localhost
-
-# KV store port
-ENV GLUU_KV_PORT 8500
-
-# URL to downloadable tar.gz contains custom pages, static, and libs for oxAuth
-ENV GLUU_CUSTOM_OXAUTH_URL ""
-
-VOLUME ${JETTY_BASE}/oxauth/custom/pages
-VOLUME ${JETTY_BASE}/oxauth/custom/static
-VOLUME ${JETTY_BASE}/oxauth/lib/ext
-
+# ====
 # cron
+# ====
+
 RUN mkdir -p /opt/jks_sync
 COPY cron/jks_sync /etc/cron.d/
 # Give execution rights on the cron job
 RUN chmod 0644 /etc/cron.d/jks_sync
 RUN touch /var/log/jks_sync.log
 
+# ==========
+# misc stuff
+# ==========
+
+RUN mkdir -p /etc/certs \
+    && mkdir -p /opt/gluu/python/libs \
+    && mkdir -p ${JETTY_BASE}/oxauth/custom/pages ${JETTY_BASE}/oxauth/custom/static \
+    && mkdir -p /etc/gluu/conf \
+    && mkdir -p /opt/templates
+
+COPY libs /opt/gluu/python/libs
+COPY certs /etc/certs
+COPY jetty/oxauth_web_resources.xml ${JETTY_BASE}/oxauth/webapps/
+COPY conf/ox-ldap.properties.tmpl /opt/templates/
+COPY conf/salt.tmpl /opt/templates/
+
+ENV GLUU_LDAP_URL localhost:1636
+ENV GLUU_KV_HOST localhost
+ENV GLUU_KV_PORT 8500
+ENV GLUU_CUSTOM_OXAUTH_URL ""
+
+VOLUME ${JETTY_BASE}/oxauth/custom/pages
+VOLUME ${JETTY_BASE}/oxauth/custom/static
+VOLUME ${JETTY_BASE}/oxauth/lib/ext
+
 COPY scripts /opt/scripts
 RUN chmod +x /opt/scripts/entrypoint.sh
-ENTRYPOINT ["/opt/scripts/entrypoint.sh"]
+CMD ["/opt/scripts/entrypoint.sh"]
