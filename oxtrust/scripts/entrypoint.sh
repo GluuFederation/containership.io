@@ -44,4 +44,9 @@ if [ ! -f /touched ]; then
 fi
 
 cd /opt/gluu/jetty/identity
-exec java -jar /opt/jetty/start.jar -server -Xms256m -Xmx2048m -XX:+DisableExplicitGC -Dgluu.base=/etc/gluu -Dcatalina.base=/opt/gluu/jetty/identity -Dorg.eclipse.jetty.server.Request.maxFormContentSize=50000000 -Dpython.home=/opt/jython
+exec gosu root java -jar /opt/jetty/start.jar -server \
+    -Xms256m -Xmx2048m -XX:+DisableExplicitGC \
+    -Dgluu.base=/etc/gluu \
+    -Dcatalina.base=/opt/gluu/jetty/identity \
+    -Dorg.eclipse.jetty.server.Request.maxFormContentSize=50000000 \
+    -Dpython.home=/opt/jython

@@ -1,6 +1,6 @@
 FROM ubuntu:14.04
 
-MAINTAINER Shouro <shouro@gluu.org>
+MAINTAINER Gluu Inc. <support@gluu.org>
 
 # ===============
 # Ubuntu packages
@@ -24,6 +24,9 @@ RUN apt-get update && apt-get install -y \
 # workaround for bug on ubuntu 14.04 with openjdk-8
 RUN /var/lib/dpkg/info/ca-certificates-java.postinst configure
 
+# Set openjdk 8 as default java
+RUN cd /usr/lib/jvm && ln -s java-1.8.0-openjdk-amd64 default-java
+
 # =====
 # Jetty
 # =====
@@ -40,10 +43,13 @@ RUN wget -q ${JETTY_TGZ_URL} -O /tmp/jetty.tar.gz \
     && mv /opt/jetty-distribution-${JETTY_VERSION} ${JETTY_HOME} \
     && rm -rf /tmp/jetty.tar.gz
 
-RUN mv ${JETTY_HOME}/etc/webdefault.xml ${JETTY_HOME}/etc/webdefault.xml.bak
-RUN mv ${JETTY_HOME}/etc/jetty.xml ${JETTY_HOME}/etc/jetty.xml.bak
+RUN mv ${JETTY_HOME}/etc/webdefault.xml ${JETTY_HOME}/etc/webdefault.xml.bak \
+    && mv ${JETTY_HOME}/etc/jetty.xml ${JETTY_HOME}/etc/jetty.xml.bak
 COPY jetty/webdefault.xml ${JETTY_HOME}/etc/
 COPY jetty/jetty.xml ${JETTY_HOME}/etc/
+
+# Ports required by jetty
+EXPOSE 8080
 
 # ======
 # Jython
@@ -81,38 +87,25 @@ RUN wget -q ${OXTRUST_DOWNLOAD_URL} -O /tmp/oxtrust.war \
 RUN mkdir -p ${JETTY_USER_HOME_LIB}
 RUN wget -q http://central.maven.org/maven2/org/bouncycastle/bcprov-jdk16/1.46/bcprov-jdk16-1.46.jar -O ${JETTY_USER_HOME_LIB}/bcprov-jdk16-1.46.jar
 
- # Directory for certificates
-RUN mkdir -p /etc/certs
-
-# Directory for config
-RUN mkdir -p /etc/gluu/conf
-
-# Directory required by oxTrust
-RUN mkdir -p /var/ox/photos /var/ox/identity/removed /var/ox/identity/cr-snapshots
-
-# Directory for custom pages and static files
-RUN mkdir -p ${JETTY_BASE}/identity/custom/pages ${JETTY_BASE}/identity/custom/static
-
-# Directory for scripts
-RUN mkdir -p /opt/scripts/
-
 # Unpack Shib config
 RUN unzip -q ${JETTY_BASE}/identity/webapps/identity/WEB-INF/lib/oxtrust-configuration-${OX_VERSION}.jar shibboleth3/* -d /opt/gluu/jetty/identity/conf
 
-# Directory for templates
-RUN mkdir -p /opt/templates/
+# ====
+# tini
+# ====
 
-# Copy templates
-COPY jetty/identity_web_resources.xml ${JETTY_BASE}/identity/webapps/
-COPY conf/oxTrustLogRotationConfiguration.xml /etc/gluu/conf/
-COPY conf/ox-ldap.properties.tmpl /opt/templates/
-COPY conf/salt.tmpl /opt/templates/
+ENV TINI_VERSION v0.15.0
+RUN wget -q https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini -O /tini \
+    && chmod +x /tini
+ENTRYPOINT ["/tini", "--"]
 
-# Set openjdk 8 as default java
-RUN cd /usr/lib/jvm && ln -s java-1.8.0-openjdk-amd64 default-java
+# ====
+# gosu
+# ====
 
-# Ports required by jetty
-EXPOSE 8080
+ENV GOSU_VERSION 1.10
+RUN wget -q https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-amd64 -O /usr/local/bin/gosu \
+    && chmod +x /usr/local/bin/gosu
 
 # Python packages
 RUN pip install -U pip
@@ -121,18 +114,28 @@ RUN pip install -U pip
 # and to make sure latest pip is being used, not from OS one
 ENV PYTHONPATH="/usr/local/lib/python2.7/dist-packages:/usr/lib/python2.7/dist-packages"
 
-RUN pip install consulate
+RUN pip install "consulate==0.6.0"
 
-# URL to LDAP
+# ==========
+# misc stuff
+# ==========
+
+RUN mkdir -p /etc/certs \
+    && mkdir -p /etc/gluu/conf \
+    && mkdir -p /var/ox/photos /var/ox/identity/removed /var/ox/identity/cr-snapshots \
+    && mkdir -p ${JETTY_BASE}/identity/custom/pages ${JETTY_BASE}/identity/custom/static \
+    && mkdir -p /opt/scripts \
+    && mkdir -p /opt/templates
+
+# Copy templates
+COPY jetty/identity_web_resources.xml ${JETTY_BASE}/identity/webapps/
+COPY conf/oxTrustLogRotationConfiguration.xml /etc/gluu/conf/
+COPY conf/ox-ldap.properties.tmpl /opt/templates/
+COPY conf/salt.tmpl /opt/templates/
+
 ENV GLUU_LDAP_URL localhost:1636
-
-# KV store hostname or IP address
 ENV GLUU_KV_HOST localhost
-
-# KV store port
 ENV GLUU_KV_PORT 8500
-
-# URL to downloadable tar.gz contains custom pages, static, and libs for oxTrust
 ENV GLUU_CUSTOM_OXTRUST_URL ""
 
 VOLUME ${JETTY_BASE}/identity/custom/pages
@@ -143,4 +146,4 @@ VOLUME ${JETTY_BASE}/identity/lib/ext
 COPY scripts/entrypoint.sh /opt/scripts/
 COPY scripts/entrypoint.py /opt/scripts/
 RUN chmod +x /opt/scripts/entrypoint.sh
-ENTRYPOINT ["/opt/scripts/entrypoint.sh"]
+CMD ["/opt/scripts/entrypoint.sh"]
