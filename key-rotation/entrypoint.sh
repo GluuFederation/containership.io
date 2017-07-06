@@ -9,4 +9,4 @@ echo "export GLUU_KEY_ROTATION_INTERVAL=${GLUU_KEY_ROTATION_INTERVAL}" >> /opt/k
 # run cron daemon
 cron
 
-exec tail -f /var/log/key-rotation.log
+exec gosu root tail -f /var/log/key-rotation.log
