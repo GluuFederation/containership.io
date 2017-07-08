@@ -144,7 +144,7 @@ def encode_keys_template(jks_pass, jks_fn, jwks_fn, cfg):
     return encode_template(fn, cfg, base_dir=base_dir), pubkey
 
 
-def generate_config(admin_pw, email, domain, org_name, ssl_cert, ssl_key):
+def generate_config(admin_pw, email, domain, org_name):
     cfg = {}
     cfg["encoded_salt"] = get_random_chars(24)
     cfg["orgName"] = org_name
@@ -343,18 +343,48 @@ def generate_config(admin_pw, email, domain, org_name, ssl_cert, ssl_key):
     # ================
     # SSL cert and key
     # ================
-    cfg["ssl_cert"] = ""
-    if os.path.exists(ssl_cert):
-        with open(ssl_cert) as f:
-            cfg["ssl_cert"] = f.read()
+    ssl_cert = "/etc/certs/gluu_https.crt"
+    ssl_key = "/etc/certs/gluu_https.key"
 
-    cfg["ssl_key"] = ""
-    if os.path.exists(ssl_key):
-        with open(ssl_key) as f:
-            cfg["ssl_key"] = f.read()
+    # generate self-signed SSL cert and key only if they aren't exist
+    if not(os.path.exists(ssl_cert) and os.path.exists(ssl_key)):
+        generate_ssl_certkey(admin_pw, email, domain, org_name)
+
+    with open(ssl_cert) as f:
+        cfg["ssl_cert"] = f.read()
+
+    with open(ssl_key) as f:
+        cfg["ssl_key"] = f.read()
 
     # populated config
     return cfg
+
+
+def generate_ssl_certkey(admin_pw, email, domain, org_name):
+    # create key with password
+    _, _, retcode = exec_cmd(
+        "openssl genrsa -des3 -out /etc/certs/gluu_https.key.orig "
+        "-passout pass:'{}' 2048".format(admin_pw))
+    assert retcode == 0, "Failed to generate SSL key with password"
+
+    # create .key
+    _, _, retcode = exec_cmd("openssl rsa -in /etc/certs/gluu_https.key.orig "
+                             "-passin pass:'{}' -out /etc/certs/gluu_https.key".format(admin_pw))
+    assert retcode == 0, "Failed to generate SSL key"
+
+    # create .csr
+    _, _, retcode = exec_cmd("openssl req -new -key /etc/certs/gluu_https.key "
+                             "-out /etc/certs/gluu_https.csr "
+                             "-subj /O='{}'/CN='{}'/emailAddress='{}'".format(org_name, domain, email))
+    assert retcode == 0, "Failed to generate SSL CSR"
+
+    # create .crt
+    _, _, retcode = exec_cmd("openssl x509 -req -days 365 -in /etc/certs/gluu_https.csr "
+                             "-signkey /etc/certs/gluu_https.key -out /etc/certs/gluu_https.crt")
+    assert retcode == 0, "Failed to generate SSL cert"
+
+    # return the paths
+    return "/etc/certs/gluu_https.crt", "/etc/certs/gluu_https.key"
 
 
 @click.command()
@@ -382,14 +412,6 @@ def generate_config(admin_pw, email, domain, org_name, ssl_cert, ssl_key):
               default=8500,
               help="Port of KV store.",
               show_default=True)
-@click.option("--ssl-cert",
-              default="/etc/certs/gluu_https.crt",
-              help="Path to SSL certificate.",
-              show_default=True)
-@click.option("--ssl-key",
-              default="/etc/certs/gluu_https.key",
-              help="Path to SSL key.",
-              show_default=True)
 @click.option("--save",
               default=False,
               help="Save config to KV store.",
@@ -398,10 +420,9 @@ def generate_config(admin_pw, email, domain, org_name, ssl_cert, ssl_key):
               default=False,
               help="Show generated config.",
               is_flag=True)
-def main(admin_pw, email, domain, org_name, kv_host, kv_port,
-         ssl_cert, ssl_key, save, view):
+def main(admin_pw, email, domain, org_name, kv_host, kv_port, save, view):
     # generate all config
-    cfg = generate_config(admin_pw, email, domain, org_name, ssl_cert, ssl_key)
+    cfg = generate_config(admin_pw, email, domain, org_name)
 
     if save:
         consul = consulate.Consul(host=kv_host, port=kv_port)

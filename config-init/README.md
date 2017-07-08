@@ -36,8 +36,6 @@ Options:
   --org-name TEXT    Organization name.  [default: Gluu]
   --kv-host TEXT     Hostname/IP address of KV store.  [default: localhost]
   --kv-port INTEGER  Port of KV store.  [default: 8500]
-  --ssl-cert TEXT    Path to SSL certificate.  [default: /etc/certs/gluu_https.crt]
-  --ssl-key TEXT     Path to SSL key.  [default: /etc/certs/gluu_https.key]
   --save             Save config to KV store.
   --view             Show generated config.
   --help             Show this message and exit.
@@ -49,8 +47,6 @@ Here's an example to generate config (and save them to Consul KV):
 
 ```
 docker run --rm \
-    -v /path/to/org_ssl.crt:/etc/certs/gluu_https.crt \
-    -v /path/to/org_ssl.key:/etc/certs/gluu_https.key \
     gluufederation/config-init \
     --admin-pw my-password \
     --email 'my-email@my.domain.com' \
@@ -58,8 +54,25 @@ docker run --rm \
     --org-name 'My Organization' \
     --kv-host consul.my.domain.com \
     --kv-port 8500 \
-    --save \
-    --view
+    --save
+```
+
+The config and self-signed SSL cert and key will be generated.
+
+To override SSL cert and key:
+
+```
+docker run --rm \
+    -v /path/to/ssl/cert:/etc/certs/gluu_https.crt \
+    -v /path/to/ssl/key:/etc/certs/gluu_https.key \
+    gluufederation/config-init \
+    --admin-pw my-password \
+    --email 'my-email@my.domain.com' \
+    --domain my.domain.com \
+    --org-name 'My Organization' \
+    --kv-host consul.my.domain.com \
+    --kv-port 8500 \
+    --save
 ```
 
 ## FAQ
