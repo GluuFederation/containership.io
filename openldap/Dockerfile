@@ -2,9 +2,7 @@ FROM ubuntu:14.04
 
 MAINTAINER Shouro <shouro@gluu.org>
 
-
 #RUN groupadd -r ldap && useradd -r -g ldap ldap
-
 
 RUN apt-get update && apt-get install -y \
     wget \
@@ -20,19 +18,15 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-
 # Install gosu
 RUN curl -o /usr/local/bin/gosu -SL 'https://github.com/tianon/gosu/releases/download/1.10/gosu-amd64' && chmod +x /usr/local/bin/gosu
-
 
 # update pip
 RUN pip install -U pip
 
-
 # A workaround to address https://github.com/docker/docker-py/issues/1054
 # and to make sure latest pip is being used, not from OS one
 ENV PYTHONPATH="/usr/local/lib/python2.7/dist-packages:/usr/lib/python2.7/dist-packages"
-
 
 #install_openldap
 ENV OPENLDAP_DEB_URL https://repo.gluu.org/ubuntu/symas-openldap-gluu.amd64_2.4.44-20161020_amd64.deb
@@ -45,6 +39,11 @@ RUN mkdir -p /var/symas/run
 #RUN chmod -R 775 /var/symas/run
 #RUN chgrp -R ldap /var/symas/run
 
+# Add Tini
+ENV TINI_VERSION v0.15.0
+RUN wget -q https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini -O /tini \
+    && chmod +x /tini
+ENTRYPOINT ["/tini", "--"]
 
 WORKDIR /ldap
 
@@ -81,15 +80,8 @@ RUN chmod +x ./scripts/replicator.sh
 # Custom schema path
 RUN mkdir -p /ldap/custom_schema
 
-# TODO: currently using port 1636 but will change to 1389
 #EXPOSE 1636
 EXPOSE 1389
-
-# Add Tini
-ENV TINI_VERSION v0.15.0
-RUN wget -q https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini -O /tini \
-    && chmod +x /tini
-ENTRYPOINT ["/tini", "--"]
 
 # Entrypoint
 COPY entrypoint.sh /

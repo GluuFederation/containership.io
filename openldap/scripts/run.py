@@ -118,8 +118,6 @@ def get_id():
 
 
 def render_ldif():
-    consul.kv.set('ldap_hostname', GLUU_LDAP_HOSTNAME)
-
     ctx_data = {
         # o_site.ldif
         # has no variables
@@ -260,8 +258,6 @@ def generate_base64_contents(text, num_spaces=1):
 
 
 def oxtrust_config():
-    consul.kv.set("oxTrustConfigGeneration", False)
-
     # keeping redundent data in context of ldif ctx_data dict for now.
     # so that we can easily remove it from here
     ctx = {
@@ -309,6 +305,9 @@ def run():
     logger.info('start of basic configuration')
     configure_provider_openldap()
     if as_boolean(GLUU_LDAP_INIT_DATA):
+        consul.kv.set('ldap_hostname', GLUU_LDAP_HOSTNAME)
+        consul.kv.set("oxTrustConfigGeneration", False)
+
         oxtrust_config()
         logger.info('start rendering of ldif files')
         render_ldif()

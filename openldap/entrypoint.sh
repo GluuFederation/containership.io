@@ -15,8 +15,6 @@ if [ ! -f /touched ]; then
     touch /touched
 fi
 
-# TODO: should we use supervisor to manage ntpd?
-
 # ensure ntp always running after container start/restart
 service ntp restart > /dev/null
 
