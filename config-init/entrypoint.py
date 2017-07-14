@@ -171,7 +171,8 @@ def generate_config(admin_pw, email, domain, org_name):
     # ====
     # LDAP
     # ====
-    cfg["ldap_hostname"] = ""  # need to be populated from somewhere else
+    cfg["ldap_init_host"] = ""  # need to be populated from somewhere else
+    cfg["ldap_init_port"] = ""  # need to be populated from somewhere else
     cfg["ldap_port"] = 1389
     cfg["ldap_binddn"] = "cn=directory manager,o=gluu"  # for OpenLDAP
     cfg["ldaps_port"] = 1636

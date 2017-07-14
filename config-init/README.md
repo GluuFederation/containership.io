@@ -63,8 +63,8 @@ To override SSL cert and key:
 
 ```
 docker run --rm \
-    -v /path/to/ssl/cert:/etc/certs/gluu_https.crt \
-    -v /path/to/ssl/key:/etc/certs/gluu_https.key \
+    -v /path/to/ssl.cert:/etc/certs/gluu_https.crt \
+    -v /path/to/ssl.key:/etc/certs/gluu_https.key \
     gluufederation/config-init \
     --admin-pw my-password \
     --email 'my-email@my.domain.com' \
@@ -90,8 +90,8 @@ docker run --rm \
 
     ```
     docker run --rm \
-        -v /path/to/org_ssl.crt:/etc/certs/gluu_https.crt \
-        -v /path/to/org_ssl.key:/etc/certs/gluu_https.key \
+        -v /path/to/ssl.crt:/etc/certs/gluu_https.crt \
+        -v /path/to/ssl.key:/etc/certs/gluu_https.key \
         gluufederation/config-init \
         --admin-pw my-password \
         --email 'my-email@my.domain.com' \

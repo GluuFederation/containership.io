@@ -16,9 +16,10 @@ from M2Crypto.EVP import Cipher
 
 GLUU_KV_HOST = os.environ.get('GLUU_KV_HOST', 'localhost')
 GLUU_KV_PORT = os.environ.get('GLUU_KV_PORT', 8500)
-GLUU_LDAP_HOSTNAME = os.environ.get('GLUU_LDAP_HOSTNAME', 'localhost')
 # Whether initial data should be inserted
-GLUU_LDAP_INIT_DATA = os.environ.get("GLUU_LDAP_INIT_DATA", True)
+GLUU_LDAP_INIT = os.environ.get("GLUU_LDAP_INIT", True)
+GLUU_LDAP_INIT_HOST = os.environ.get('GLUU_LDAP_INIT_HOST', 'localhost')
+GLUU_LDAP_INIT_PORT = os.environ.get("GLUU_LDAP_INIT_PORT", 1389)
 TMPDIR = tempfile.mkdtemp()
 
 consul = consulate.Consul(host=GLUU_KV_HOST, port=GLUU_KV_PORT)
@@ -104,7 +105,7 @@ def configure_provider_openldap():
 
     # register master
     host = guess_ip_addr()
-    port = consul.kv.get("ldap_port")
+    port = consul.kv.get("ldap_port", 1389)
     consul.kv.set("ldap_masters/{}:{}".format(host, port), {
         "host": host, "port": port,
     })
@@ -126,11 +127,11 @@ def render_ldif():
         'ldap_use_ssl': consul.kv.get('ldap_use_ssl'),
         # oxpassport-config.ldif
         'inumAppliance': consul.kv.get('inumAppliance'),
-        'ldap_hostname': consul.kv.get('ldap_hostname'),
+        'ldap_hostname': consul.kv.get('ldap_init_host'),
         # TODO: currently using std ldaps port 1636 as ldap port.
         # after basic testing we need to do it right, and remove this hack.
         # to do this properly we need to update all templates.
-        'ldaps_port': consul.kv.get('ldap_port'),
+        'ldaps_port': consul.kv.get('ldap_init_port'),
         'ldap_binddn': consul.kv.get('ldap_binddn'),
         'encoded_ox_ldap_pw': consul.kv.get('encoded_ox_ldap_pw'),
         'jetty_base': consul.kv.get('jetty_base'),
@@ -283,8 +284,8 @@ def oxtrust_config():
         'orgName': consul.kv.get('orgName'),
         'ldap_site_binddn': consul.kv.get('ldap_site_binddn'),
         'encoded_ox_ldap_pw': consul.kv.get('encoded_ox_ldap_pw'),
-        'ldap_hostname': consul.kv.get('ldap_hostname'),
-        'ldaps_port': consul.kv.get('ldaps_port'),
+        'ldap_hostname': consul.kv.get('ldap_init_host'),
+        'ldaps_port': consul.kv.get('ldap_init_port'),
     }
 
     oxtrust_template_base = '/ldap/templates/oxtrust'
@@ -304,8 +305,9 @@ def oxtrust_config():
 def run():
     logger.info('start of basic configuration')
     configure_provider_openldap()
-    if as_boolean(GLUU_LDAP_INIT_DATA):
-        consul.kv.set('ldap_hostname', GLUU_LDAP_HOSTNAME)
+    if as_boolean(GLUU_LDAP_INIT):
+        consul.kv.set('ldap_init_host', GLUU_LDAP_INIT_HOST)
+        consul.kv.set('ldap_init_port', GLUU_LDAP_INIT_PORT)
         consul.kv.set("oxTrustConfigGeneration", False)
 
         oxtrust_config()

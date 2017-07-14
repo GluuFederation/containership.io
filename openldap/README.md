@@ -21,7 +21,9 @@ docker pull gluufederation/openldap:latest
 - `GLUU_KV_HOST`: hostname or IP address of Consul.
 - `GLUU_KV_PORT`: port of Consul.
 - `GLUU_LDAP_HOSTNAME`: hostname of ldap.
-- `GLUU_LDAP_INIT_DATA`: whether to import initial LDAPentries (possible value are `true` or `false`).
+- `GLUU_LDAP_INIT`: whether to import initial LDAP entries (possible value are `true` or `false`).
+- `GLUU_LDAP_INIT_HOST`: hostname of LDAP for initial configuration (only usable when `GLUU_LDAP_INIT` set to `true`).
+- `GLUU_LDAP_INIT_PORT`: port of LDAP for initial configuration (only usable when `GLUU_LDAP_INIT` set to `true`).
 
 ## Volumes
 
@@ -37,8 +39,9 @@ docker run -d \
     --name ldap-master \
     -e GLUU_KV_HOST=my.consul.domain.com \
     -e GLUU_KV_PORT=8500 \
-    -e GLUU_LDAP_HOSTNAME=my.ldap.hostname \
-    -e GLUU_LDAP_INIT_DATA=true \
+    -e GLUU_LDAP_INIT=true \
+    -e GLUU_LDAP_INIT_HOST=my.ldap.hostname \
+    -e GLUU_LDAP_INIT_PORT=1389 \
     gluufederation/openldap:containership
 ```
 
@@ -49,7 +52,7 @@ docker run -d \
     --name ldap-master-no-data \
     -e GLUU_KV_HOST=my.consul.domain.com \
     -e GLUU_KV_PORT=8500 \
-    -e GLUU_LDAP_INIT_DATA=false \
+    -e GLUU_LDAP_INIT=false \
     gluufederation/openldap:containership
 ```
 
@@ -68,8 +71,9 @@ docker run -d \
     --name ldap-master \
     -e GLUU_KV_HOST=my.consul.domain.com \
     -e GLUU_KV_PORT=8500 \
-    -e GLUU_LDAP_HOSTNAME=my.ldap.hostname \
-    -e GLUU_LDAP_INIT_DATA=true \
-    -e GLUU_CUSTOM_SCHEMA_URL=<https://url/of/custom-schema.tar.gz>
+    -e GLUU_LDAP_INIT=true \
+    -e GLUU_LDAP_INIT_HOST=my.ldap.hostname \
+    -e GLUU_LDAP_INIT_PORT=1389 \
+    -e GLUU_CUSTOM_SCHEMA_URL=https://url/of/custom-schema.tar.gz \
     gluufederation/openldap:containership
 ```
