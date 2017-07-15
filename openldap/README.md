@@ -20,7 +20,6 @@ docker pull gluufederation/openldap:latest
 
 - `GLUU_KV_HOST`: hostname or IP address of Consul.
 - `GLUU_KV_PORT`: port of Consul.
-- `GLUU_LDAP_HOSTNAME`: hostname of ldap.
 - `GLUU_LDAP_INIT`: whether to import initial LDAP entries (possible value are `true` or `false`).
 - `GLUU_LDAP_INIT_HOST`: hostname of LDAP for initial configuration (only usable when `GLUU_LDAP_INIT` set to `true`).
 - `GLUU_LDAP_INIT_PORT`: port of LDAP for initial configuration (only usable when `GLUU_LDAP_INIT` set to `true`).

@@ -23,7 +23,6 @@ LDAPServer = namedtuple(
 
 kv_host = os.environ.get("GLUU_KV_HOST", "localhost")
 kv_port = os.environ.get("GLUU_KV_PORT", 8500)
-check_interval = os.environ.get("GLUU_LDAP_CHECK_INTERVAL", 30)
 consul = consulate.Consul(host=kv_host, port=kv_port)
 
 logger = logging.getLogger("ldap_replicator")
@@ -219,11 +218,7 @@ if __name__ == "__main__":
     active_servers = get_active_servers()
     servers_num = len(active_servers)
 
-    if not servers_num:
-        logger.warn(
-            "no active server(s) found ... skipping replication"
-        )
-    elif servers_num < 2:
+    if servers_num < 2:
         logger.warn(
             "active servers less than 2 instances ... "
             "skipping replication"
@@ -236,9 +231,10 @@ if __name__ == "__main__":
         multi_master_syncrepl(
             active_servers,
             "cn=admin,cn=config",
+            decrypt_text(consul.kv.get("encoded_ox_ldap_pw"),
+                         consul.kv.get("encoded_salt")),
+            consul.kv.get("replication_dn"),
             decrypt_text(consul.kv.get("encoded_ox_replication_pw"),
                          consul.kv.get("encoded_salt")),
-            "cn=replicator,o=gluu",
-            "secret",
         )
-        logger.info("replication done")
+        logger.info("replication has been configured")
