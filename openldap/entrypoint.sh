@@ -9,10 +9,11 @@ download_custom_schema() {
     fi
 }
 
-if [ ! -f /touched ]; then
+mkdir -p /flag
+if [ ! -f /flag/touched ]; then
     download_custom_schema
     python /ldap/scripts/run.py
-    touch /touched
+    touch /flag/touched
 fi
 
 # ensure ntp always running after container start/restart
