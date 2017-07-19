@@ -35,27 +35,30 @@ Here's an example to run the container as ldap master with initial LDAP entries:
 
 ```
 docker run -d \
-    --name ldap-master \
+    --name openldap-init \
     -e GLUU_KV_HOST=my.consul.domain.com \
     -e GLUU_KV_PORT=8500 \
     -e GLUU_LDAP_INIT=true \
     -e GLUU_LDAP_INIT_HOST=my.ldap.hostname \
     -e GLUU_LDAP_INIT_PORT=1389 \
+    -v /path/to/ldap/flag:/flag \
     gluufederation/openldap:containership
 ```
+
+Note: to avoid data being re-initialized after container restart, volume mapping of `/flag` directory is encouraged. In the future, the process of LDAP initial data will be taken care by another container.
 
 To add other container(s):
 
 ```
 docker run -d \
-    --name ldap-master-no-data \
+    --name openldap \
     -e GLUU_KV_HOST=my.consul.domain.com \
     -e GLUU_KV_PORT=8500 \
     -e GLUU_LDAP_INIT=false \
     gluufederation/openldap:containership
 ```
 
-Note: all containers are synchronized using `ntp` pointed to [Google NTP](https://developers.google.com/time/) servers.
+Note: all containers must be synchronized using `ntp`.
 
 ## Customizing OpenLDAP
 
@@ -67,12 +70,13 @@ Here's an example to run the container as ldap master with initial LDAP entries 
 
 ```
 docker run -d \
-    --name ldap-master \
+    --name openldap-init \
     -e GLUU_KV_HOST=my.consul.domain.com \
     -e GLUU_KV_PORT=8500 \
     -e GLUU_LDAP_INIT=true \
     -e GLUU_LDAP_INIT_HOST=my.ldap.hostname \
     -e GLUU_LDAP_INIT_PORT=1389 \
     -e GLUU_CUSTOM_SCHEMA_URL=https://url/of/custom-schema.tar.gz \
+    -v /path/to/ldap/flag:/flag \
     gluufederation/openldap:containership
 ```
