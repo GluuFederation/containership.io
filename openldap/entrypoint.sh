@@ -9,11 +9,16 @@ download_custom_schema() {
     fi
 }
 
+if [ ! -f /touched ]; then
+    python /ldap/scripts/ldap_configurator.py
+    touch /touched
+fi
+
 mkdir -p /flag
-if [ ! -f /flag/touched ]; then
+if [ ! -f /flag/ldap_initialized ]; then
     download_custom_schema
-    python /ldap/scripts/run.py
-    touch /flag/touched
+    python /ldap/scripts/ldap_initializer.py
+    touch /flag/ldap_initialized
 fi
 
 # ensure ntp always running after container start/restart
