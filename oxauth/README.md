@@ -65,9 +65,12 @@ There are 2 ways to run oxAuth with custom files:
 
     The `.tar.gz` file must consist of following directories:
 
-    - pages
-    - static
-    - libs
+    ```
+    ├── lib
+    │   └── ext
+    ├── pages
+    └── static
+    ```
 
 2.  Map volumes from host to container.
 
@@ -79,6 +82,6 @@ There are 2 ways to run oxAuth with custom files:
         -e GLUU_LDAP_URL=my.ldap.domain.com:1636 \
         -v /path/to/custom/pages:/opt/gluu/jetty/oxauth/custom/pages \
         -v /path/to/custom/static:/opt/gluu/jetty/oxauth/custom/static \
-        -v /path/to/custom/lib:/opt/gluu/jetty/oxauth/lib/ext \
+        -v /path/to/custom/lib/ext:/opt/gluu/jetty/oxauth/lib/ext \
         gluufederation/oxauth:containership
     ```

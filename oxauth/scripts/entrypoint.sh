@@ -9,15 +9,15 @@ download_custom_tar() {
         tar xf custom-oxauth.tar.gz
 
         if [ -d /tmp/oxauth/pages ]; then
-            cp -R /tmp/oxauth/pages/* /opt/gluu/jetty/oxauth/custom/pages/
+            cp -R /tmp/oxauth/pages/ /opt/gluu/jetty/oxauth/custom/
         fi
 
         if [ -d /tmp/oxauth/static ]; then
-            cp -R /tmp/oxauth/static/* /opt/gluu/jetty/oxauth/custom/static/
+            cp -R /tmp/oxauth/static/ /opt/gluu/jetty/oxauth/custom/
         fi
 
-        if [ -d /tmp/oxauth/libs ]; then
-            cp -R /tmp/oxauth/libs/* /opt/gluu/jetty/oxauth/lib/ext/
+        if [ -d /tmp/oxauth/lib/ext ]; then
+            cp -R /tmp/oxauth/lib/ext/ /opt/gluu/jetty/oxauth/lib/
         fi
     fi
 }
