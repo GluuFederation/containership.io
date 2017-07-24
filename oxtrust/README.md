@@ -46,6 +46,7 @@ docker run -d \
 ## Customizing oxTrust
 
 oxTrust can be customized by providing HTML pages, static resource files (i.e. CSS), or JAR libraries.
+Refer to https://gluu.org/docs/ce/3.0.1/operation/custom-loginpage/ for an example on how to customize oxTrust.
 
 There are 2 ways to run oxTrust with custom files:
 
