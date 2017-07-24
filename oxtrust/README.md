@@ -62,6 +62,15 @@ There are 2 ways to run oxTrust with custom files:
         gluufederation/oxtrust:containership
     ```
 
+    The `.tar.gz` file must consist of following directories:
+
+    ```
+    ├── lib
+    │   └── ext
+    ├── pages
+    └── static
+    ```
+
 2.  Map volumes from host to container.
 
     ```
@@ -72,6 +81,6 @@ There are 2 ways to run oxTrust with custom files:
         -e GLUU_LDAP_URL=my.ldap.domain.com:1636 \
         -v /path/to/custom/pages:/opt/gluu/jetty/identity/custom/pages \
         -v /path/to/custom/static:/opt/gluu/jetty/identity/custom/static \
-        -v /path/to/custom/lib:/opt/gluu/jetty/identity/lib/ext \
+        -v /path/to/custom/lib/ext:/opt/gluu/jetty/identity/lib/ext \
         gluufederation/identity:containership
     ```

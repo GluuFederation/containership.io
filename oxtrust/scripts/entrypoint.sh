@@ -21,15 +21,15 @@ download_custom_tar() {
         tar xf custom-identity.tar.gz
 
         if [ -d /tmp/identity/pages ]; then
-            cp -R /tmp/identity/pages/* /opt/gluu/jetty/identity/custom/pages/
+            cp -R /tmp/identity/pages/ /opt/gluu/jetty/identity/custom/
         fi
 
         if [ -d /tmp/identity/static ]; then
-            cp -R /tmp/identity/static/* /opt/gluu/jetty/identity/custom/static/
+            cp -R /tmp/identity/static/ /opt/gluu/jetty/identity/custom/
         fi
 
-        if [ -d /tmp/identity/libs ]; then
-            cp -R /tmp/identity/libs/* /opt/gluu/jetty/identity/lib/ext/
+        if [ -d /tmp/identity/lib/ext ]; then
+            cp -R /tmp/identity/lib/ext/ /opt/gluu/jetty/identity/lib/
         fi
     fi
 }
