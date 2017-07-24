@@ -46,6 +46,7 @@ docker run -d \
 ## Customizing oxAuth
 
 oxAuth can be customized by providing HTML pages, static resource files (i.e. CSS), or JAR libraries.
+Refer to https://gluu.org/docs/ce/3.0.1/operation/custom-loginpage/ for an example on how to customize oxAuth.
 
 There are 2 ways to run oxAuth with custom files:
 
@@ -61,6 +62,12 @@ There are 2 ways to run oxAuth with custom files:
         -e GLUU_CUSTOM_OXAUTH_URL=http://my.domain.com/resources/custom-oxauth.tar.gz \
         gluufederation/oxauth:containership
     ```
+
+    The `.tar.gz` file must consist of following directories:
+
+    - pages
+    - static
+    - libs
 
 2.  Map volumes from host to container.
 
