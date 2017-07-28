@@ -2,7 +2,7 @@ FROM ubuntu:14.04
 
 MAINTAINER Shouro <shouro@gluu.org>
 
-#RUN groupadd -r ldap && useradd -r -g ldap ldap
+RUN groupadd -r gluu && useradd --no-log-init -r -g gluu gluu
 
 RUN apt-get update && apt-get install -y \
     wget \
@@ -36,14 +36,11 @@ RUN wget -q ${OPENLDAP_DEB_URL} -O /tmp/openldap.deb \
     && rm -rf /tmp/openldap.deb
 
 RUN mkdir -p /var/symas/run
-#RUN chmod -R 775 /var/symas/run
-#RUN chgrp -R ldap /var/symas/run
 
 # Add Tini
 ENV TINI_VERSION v0.15.0
 RUN wget -q https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini -O /tini \
     && chmod +x /tini
-ENTRYPOINT ["/tini", "--"]
 
 WORKDIR /ldap
 
@@ -71,8 +68,8 @@ RUN mkdir -p /opt/gluu/data/main_db
 RUN mkdir -p /opt/gluu/data/site_db
 
 # Volumes
-VOLUME /opt/gluu/data/main_db
-VOLUME /opt/gluu/data/site_db
+#VOLUME /opt/gluu/data/main_db
+#VOLUME /opt/gluu/data/site_db
 
 RUN touch /var/log/replicator.log
 RUN chmod +x ./scripts/replicator.sh
@@ -83,7 +80,11 @@ RUN mkdir -p /ldap/custom_schema
 #EXPOSE 1636
 EXPOSE 1389
 
+RUN chown -R gluu:gluu /var/symas/run /opt/symas/etc/openldap /opt/gluu/data /ldap
+
 # Entrypoint
 COPY entrypoint.sh /
 RUN chmod +x /entrypoint.sh
+USER gluu
+ENTRYPOINT ["/tini", "--"]
 CMD ["/entrypoint.sh"]

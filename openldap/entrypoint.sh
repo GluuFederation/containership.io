@@ -9,29 +9,29 @@ download_custom_schema() {
     fi
 }
 
-if [ ! -f /touched ]; then
+if [ ! -f /ldap/touched ]; then
     python /ldap/scripts/ldap_configurator.py
-    touch /touched
+    touch /ldap/touched
 fi
 
-mkdir -p /flag
-if [ ! -f /flag/ldap_initialized ]; then
+mkdir -p /ldap/flag
+if [ ! -f /ldap/flag/ldap_initialized ]; then
     download_custom_schema
     python /ldap/scripts/ldap_initializer.py
-    touch /flag/ldap_initialized
+    touch /ldap/flag/ldap_initialized
 fi
 
 # ensure ntp always running after container start/restart
 # service ntp restart > /dev/null
 
 # run replication as background job
-nohup /ldap/scripts/replicator.sh >>/var/log/replicator.log 2>&1&
+nohup /ldap/scripts/replicator.sh >>/ldap/replicator.log 2>&1&
 
 # run slapd
-exec gosu root /opt/symas/lib64/slapd \
+exec /opt/symas/lib64/slapd \
     -d 256 \
-    -u root \
-    -g root \
+    -u gluu \
+    -g gluu \
     -h ldap://0.0.0.0:1389/ \
     -f /opt/symas/etc/openldap/slapd.conf \
     -F /opt/symas/etc/openldap/slapd.d
