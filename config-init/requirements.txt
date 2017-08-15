@@ -1,3 +1,0 @@
-m2crypto==0.22.3
-consulate==0.6.0
-click==6.7
