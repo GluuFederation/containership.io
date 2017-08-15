@@ -1,22 +1,19 @@
 # containership.io
 
-Gluu's containership.io application
+A repository to host resources for Gluu Server and containership.io integration.
 
 ## Images
 
-Each image is stored under its own directory.
-Directories prefixed by `_` marked as unsupported/deprecated images.
+__Note:__ Each image is MOVED to its own repository:
 
-## Versioning/Tagging
+1. Config Init: https://github.com/GluuFederation/docker-config-init
+2. Key Rotation: https://github.com/GluuFederation/docker-key-rotation
+3. nginx: https://github.com/GluuFederation/docker-nginx
+4. OpenLDAP: https://github.com/GluuFederation/docker-openldap
+5. oxAuth: https://github.com/GluuFederation/docker-oxauth
+6. oxTrust: https://github.com/GluuFederation/docker-oxtrust
 
-Each image uses their own versioning/tagging format.
+## Links
 
-    <IMAGE-NAME>:<GLUU-SERVER-VERSION>_<INTERNAL-REV-VERSION>
-
-For example, `gluufederation/oxauth:3.0.1_rev1.0.0` consists of:
-
-- glufederation/oxauth as `<IMAGE_NAME>`; the actual image name
-- 3.0.1 as `GLUU-SERVER-VERSION`; the Gluu Server version as setup reference
-- rev1.0.0 as `<INTERNAL-REV-VERSION>`; revision made when developing the image
-
-See `CHANGES.md` under each directory to see its version and changelog.
+1. Wiki: https://github.com/GluuFederation/containership.io/wiki.
+2. Issue tracker: https://github.com/GluuFederation/containership.io/issues.
