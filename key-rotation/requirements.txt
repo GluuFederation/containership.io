@@ -1,3 +1,0 @@
-consulate==0.6.0
-pyldap==2.4.36
-m2crypto==0.22.3
